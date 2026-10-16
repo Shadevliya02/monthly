@@ -146,6 +146,13 @@ h1 { font: 800 28px/1.15 var(--f-display); letter-spacing: -.02em; margin: 4px 0
 .kpi.lead { background: var(--side); color: var(--side-ink); border-color: var(--side); }
 .kpi.lead .k, .kpi.lead .n { color: var(--side-ink-2); }
 .kpi.lead .n b { color: var(--side-ink); }
+.kpis { grid-template-columns: repeat(3, minmax(0, 1fr)) repeat(2, minmax(0, 1.5fr)); }
+.kpi .pair { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 14px; }
+.kpi .pair > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.kpi .pair > div + div { border-left: 1px solid var(--line); padding-left: 14px; }
+.kpi .sl { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+.kpi .sl .dummy { margin: 0; font-size: 9px; padding: 0 4px; }
+.kpi.split .v { font-size: 20px; }
 
 /* ---------- Insights ---------- */
 .insights { padding: 0 0 4px; }
@@ -277,6 +284,7 @@ td.tl { padding-top: 8px; }
 
 @media (max-width: 1280px) {
   .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kpi.split { grid-column: span 3; }
   .panels { grid-template-columns: minmax(0, 1fr); }
   .ins-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -293,7 +301,7 @@ td.tl { padding-top: 8px; }
   .main { overflow: visible; }
   .main-inner { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpi.lead { grid-column: 1 / -1; }
+  .kpi.lead, .kpi.split { grid-column: 1 / -1; }
   .ins-grid { grid-template-columns: minmax(0, 1fr); }
   h1 { font-size: 22px; }
   .head-tools, .search, .search input { width: 100%; }
@@ -556,9 +564,14 @@ function renderKpis() {
   const rows = segRows(all);
   const out = all.filter(r => r.seg === "Outbound"), inn = all.filter(r => r.seg === "Inbound");
   const tot = sum(all, r => r.value), vo = sum(out, r => r.value), vi = sum(inn, r => r.value);
-  const ret = rows.filter(r => r.cycles.length);
-  const lead = rows.length ? Math.round(avg(rows, r => r.st.total)) : null;
-  const sorted = rows.slice().sort((a, b) => a.st.total - b.st.total);
+  const segs = ["Outbound", "Inbound"].filter(g => state.seg === "all" || state.seg === g);
+  const split = (head, cell) => `<div class="kpi split">
+      <div class="k">${head}</div>
+      <div class="pair">${segs.map(g => {
+        const gr = all.filter(r => r.seg === g);
+        return `<div><span class="sl">${g}${gr.some(r => r.dummy) ? ' <span class="dummy">Dummy</span>' : ""}</span>${gr.length ? cell(gr) : '<div class="v">–</div><div class="n">Tidak ada invoice</div>'}</div>`;
+      }).join("")}</div>
+    </div>`;
   $("kpis").innerHTML = `
     <div class="kpi lead">
       <div class="k">Total Paid · ${MONTHS[state.month]}</div>
@@ -575,16 +588,11 @@ function renderKpis() {
       <div class="v">${rp(vi)}</div>
       <div class="n"><b>${inn.length}</b> invoice · ${tot ? 100 - pct(vo, tot) : 0}% nilai</div>
     </div>
-    <div class="kpi">
-      <div class="k"><i style="background:var(--s2)"></i>Total return</div>
-      <div class="v">${rows.length ? sum(rows, r => r.cycles.length) + " kali" : "–"}</div>
-      <div class="n">${rows.length ? `<b>${ret.length} dari ${rows.length}</b> invoice sempat di-return` : "Tidak ada invoice"}</div>
-    </div>
-    <div class="kpi">
-      <div class="k">Rata-rata Submit → Paid</div>
-      <div class="v">${lead === null ? "–" : lead + " hari"}</div>
-      <div class="n">${rows.length ? `Tercepat <b>${sorted[0].st.total} h</b> · terlama <b>${sorted[sorted.length - 1].st.total} h</b>` : "Tidak ada invoice"}</div>
-    </div>`;
+    ${split(`<i style="background:var(--s2)"></i>Total return`, gr => `<div class="v">${sum(gr, r => r.cycles.length)} kali</div>
+      <div class="n"><b>${gr.filter(r => r.cycles.length).length} dari ${gr.length}</b> invoice di-return</div>`)}
+    ${split("Rata-rata Submit → Paid", gr => { const so = gr.slice().sort((x, y) => x.st.total - y.st.total);
+      return `<div class="v">${Math.round(avg(gr, r => r.st.total))} hari</div>
+      <div class="n">${so.length > 1 ? `Rentang <b>${so[0].st.total}–${so[so.length - 1].st.total} h</b> · ${so.length} invoice` : `1 invoice`}</div>`; })}`;
 }
 
 /* ---------- insights ---------- */
