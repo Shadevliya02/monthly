@@ -10,8 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: 16:9 app shell — dark sidebar kiri, kanan: header + pilihan bulan, KPI, ringkasan jarak, tabel paid dengan kolom timeline. */
+/* Layout: 16:9 app shell — sidebar gelap kiri; kanan: header + bulan, KPI, ringkasan analisis, grafik, tabel paid dengan timeline.
+   Tema utama terang; mode gelap opsional lewat tombol (class .dark di <html>). */
 :root {
+  color-scheme: light;
   --bg: #f5f3f2;
   --surface: #ffffff;
   --surface-2: #faf7f6;
@@ -27,32 +29,27 @@
   --side-ink-2: #a3989a;
   --side-hover: #2f2526;
   --side-active: #b3141c;
-  --s1: #2a78d6;  /* Review awal: submit -> return pertama */
-  --s2: #eb6834;  /* Return & revisi: return pertama -> resubmit */
-  --s3: #1baf7a;  /* Menuju paid: submit/resubmit terakhir -> paid */
+  --s1: #2a78d6;  /* Review dokumen */
+  --s2: #eb6834;  /* Revisi partner */
+  --s3: #1baf7a;  /* Menuju paid */
   --bar: #55606f;
   --good: #1f7a3a;
   --good-soft: #e5f2e9;
+  --warn: #a35a00;
+  --warn-soft: #fdf1df;
   --shadow: 0 1px 2px rgba(35,27,28,.05), 0 6px 18px rgba(35,27,28,.04);
   --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #131011; --surface: #1c1718; --surface-2: #221c1d; --ink: #f3eded; --ink-2: #c0b5b6; --ink-3: #91868a;
-    --line: #342b2c; --accent: #e2474e; --accent-ink: #1a0f10; --accent-soft: #3a1e20;
-    --side: #0e0b0b; --side-ink: #ece5e5; --side-ink-2: #9a8f90; --side-hover: #1f1819; --side-active: #b3141c;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --bar: #8d99aa; --good: #4cc07a; --good-soft: #17301f;
-    --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
+:root.dark {
+  color-scheme: dark;
   --bg: #131011; --surface: #1c1718; --surface-2: #221c1d; --ink: #f3eded; --ink-2: #c0b5b6; --ink-3: #91868a;
   --line: #342b2c; --accent: #e2474e; --accent-ink: #1a0f10; --accent-soft: #3a1e20;
   --side: #0e0b0b; --side-ink: #ece5e5; --side-ink-2: #9a8f90; --side-hover: #1f1819; --side-active: #b3141c;
   --s1: #3987e5; --s2: #d95926; --s3: #199e70; --bar: #8d99aa; --good: #4cc07a; --good-soft: #17301f;
-  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+  --warn: #f0b04a; --warn-soft: #3a2a12;
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
 }
 
 * { box-sizing: border-box; }
@@ -108,12 +105,19 @@ button, input { font: inherit; color: inherit; }
 h1 { font: 800 28px/1.15 var(--f-display); letter-spacing: -.02em; margin: 4px 0 4px; text-wrap: balance; }
 .sub { color: var(--ink-2); font-size: 13.5px; }
 .sub b { color: var(--ink); font-weight: 600; }
+.head-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .search { position: relative; }
 .search input {
   width: 280px; max-width: 100%; height: 38px; padding: 0 12px 0 34px; border-radius: 9px;
   border: 1px solid var(--line); background: var(--surface);
 }
 .search svg { position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; stroke: var(--ink-3); fill: none; stroke-width: 2; }
+.theme-btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 9px; cursor: pointer; font-weight: 600; font-size: 12.5px; white-space: nowrap;
+}
+.theme-btn:hover { background: var(--surface-2); }
+.theme-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
 .months {
   display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line);
@@ -142,48 +146,68 @@ h1 { font: 800 28px/1.15 var(--f-display); letter-spacing: -.02em; margin: 4px 0
 .kpi.lead { background: var(--side); color: var(--side-ink); border-color: var(--side); }
 .kpi.lead .k, .kpi.lead .n { color: var(--side-ink-2); }
 .kpi.lead .n b { color: var(--side-ink); }
-.split { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; margin-top: 4px; background: transparent; }
-.split span { display: block; height: 100%; border-radius: 3px; }
+
+/* ---------- Insights ---------- */
+.insights { padding: 0 0 4px; }
+.ins-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px 10px; }
+.ins-h h2 { font: 700 15px var(--f-display); margin: 0; }
+.ins-h p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
+.ins-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ins { background: var(--surface); padding: 14px 16px 16px; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
+.ins .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); }
+.ins .ic svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ins .ic.blue { color: var(--s1); }
+.ins .ic.orange { color: var(--s2); }
+.ins .ic.aqua { color: var(--s3); }
+.ins .ic.warn { color: var(--warn); background: var(--warn-soft); }
+.ins .tag { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.ins h3 { margin: 2px 0 4px; font: 700 14.5px/1.35 var(--f-display); text-wrap: balance; }
+.ins p { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 62ch; }
+.ins p b { color: var(--ink); font-weight: 600; }
+.ins-foot { font-size: 11.5px; color: var(--ink-3); padding: 10px 16px 12px; }
 
 /* ---------- Panels ---------- */
 .panels { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
-.card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 16px 6px; flex-wrap: wrap; }
+.card-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px 6px; flex-wrap: wrap; }
 .card-h h2 { font: 700 15px var(--f-display); margin: 0; }
 .card-h p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend i.dot { border-radius: 50%; }
+.legend i.ring { border-radius: 50%; background: var(--surface) !important; border: 2px solid; width: 10px; height: 10px; }
 .chart { padding: 4px 16px 14px; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart text { font-family: var(--f-body); }
 
 /* ---------- Table ---------- */
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px 12px; }
 .toolbar h2 { font: 700 15px var(--f-display); margin: 0; }
 .toolbar p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
+.tlegend { padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
 .seg { display: inline-flex; max-width: 100%; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; }
 .seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 .seg button .c { color: var(--ink-3); font-weight: 500; margin-left: 4px; }
 .tbl-wrap { overflow-x: auto; }
-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
 thead th {
   text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .03em; color: var(--ink-2);
-  background: var(--surface-2); padding: 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: bottom;
+  background: var(--surface-2); padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: bottom; line-height: 1.3;
 }
+thead th small { display: block; font-weight: 500; letter-spacing: 0; color: var(--ink-3); font-size: 10.5px; margin-top: 2px; }
 thead th.tl-h { padding-bottom: 4px; }
-thead th.hl { color: var(--ink); }
-thead th.hl::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; background: var(--hc); vertical-align: 0; }
-tbody td { padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th.hl > span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; background: var(--hc); }
+tbody td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 tbody tr.row { cursor: pointer; }
 tbody tr.row:hover td { background: var(--surface-2); }
 tbody tr.row.sel td { background: var(--accent-soft); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-td.mono, .mono { font-family: var(--f-mono); font-size: 11.5px; }
-td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
-td.desc { min-width: 200px; max-width: 260px; }
-td.partner { min-width: 130px; max-width: 170px; }
+td.mono, .mono { font-family: var(--f-mono); font-size: 11px; }
+td.date { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+td.desc { min-width: 170px; max-width: 210px; }
+td.partner { min-width: 110px; max-width: 140px; }
 td.nowrap { white-space: nowrap; }
 .no { color: var(--ink-3); font-variant-numeric: tabular-nums; }
 tr.grp td { background: var(--surface-2); font-weight: 700; padding-block: 8px; border-bottom: 1px solid var(--line); }
@@ -194,11 +218,14 @@ tr.sub td { font-weight: 600; color: var(--ink-2); background: var(--surface); }
 tr.total td { font-weight: 800; font-size: 13px; background: var(--surface-2); border-bottom: 0; }
 .pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; background: var(--good-soft); color: var(--good); white-space: nowrap; }
 .pill svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.6; }
-.dl { display: flex; flex-direction: column; gap: 2px; }
-.dl .d { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
-.dl .rk { display: inline-block; min-width: 20px; font-size: 10px; font-weight: 700; color: var(--ink-3); }
-.gap { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
-.gap b { color: var(--ink-2); font-weight: 700; }
+/* baris siklus: tinggi sama agar Return ke-n sejajar dengan Resubmit ke-n */
+.cyc { display: flex; flex-direction: column; }
+.cyc .ln { height: 20px; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cyc .ln b { font-weight: 600; }
+.cyc .rk { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font-size: 10px; font-weight: 700; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.cyc .g { font-size: 11px; color: var(--ink-3); }
+.cyc .miss { color: var(--warn); font-size: 11.5px; font-weight: 600; }
+.cyc .foot { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
 .nil { color: var(--ink-3); }
 .dummy { display: inline-block; margin-top: 3px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); border: 1px dashed var(--ink-3); border-radius: 4px; padding: 0 5px; width: max-content; }
 .tl-cap { font-size: 11px; color: var(--ink-2); margin-bottom: 2px; white-space: nowrap; }
@@ -232,19 +259,26 @@ td.tl { padding-top: 8px; }
 .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
 .facts div span { display: block; font-size: 11px; color: var(--ink-3); font-weight: 600; }
 .facts div b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.mix { display: flex; flex-direction: column; gap: 6px; }
+.mix .bar { display: flex; gap: 2px; height: 10px; }
+.mix .bar span { display: block; height: 100%; border-radius: 3px; }
+.mix .lg { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-2); }
+.mix .lg i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
 .steps { list-style: none; margin: 0; padding: 0; }
 .steps li { display: grid; grid-template-columns: 22px 1fr auto; gap: 0 12px; }
 .steps .dot { width: 14px; height: 14px; border-radius: 50%; margin: 3px 4px 0; background: var(--surface); border: 2px solid var(--ink-3); }
 .steps .lbl { font-weight: 600; }
 .steps .dt { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-2); }
+.steps .dt.miss { color: var(--warn); }
 .steps .link { grid-column: 1 / -1; display: grid; grid-template-columns: 22px 1fr; gap: 12px; }
-.steps .link .bar { width: 4px; margin: 2px auto; border-radius: 2px; min-height: 30px; }
+.steps .link .bar { width: 4px; margin: 2px auto; border-radius: 2px; min-height: 26px; }
 .steps .link .txt { font-size: 12px; color: var(--ink-2); align-self: center; padding: 6px 0; }
 .steps .link .txt b { color: var(--ink); }
 
 @media (max-width: 1280px) {
   .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .panels { grid-template-columns: minmax(0, 1fr); }
+  .ins-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 960px) {
   html, body { height: auto; }
@@ -260,8 +294,9 @@ td.tl { padding-top: 8px; }
   .main-inner { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi.lead { grid-column: 1 / -1; }
+  .ins-grid { grid-template-columns: minmax(0, 1fr); }
   h1 { font-size: 22px; }
-  .search, .search input { width: 100%; }
+  .head-tools, .search, .search input { width: 100%; }
   .head > div { min-width: 0; }
   .toolbar > div { min-width: 0; }
   .chart { overflow-x: auto; }
@@ -285,7 +320,7 @@ td.tl { padding-top: 8px; }
     </div>
     <div class="nav-scroll">
       <div class="nav-label">Monitoring</div>
-      <nav class="nav" id="nav-main">
+      <nav class="nav">
         <button data-nav="all" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard Paid</button>
         <button data-nav="ret"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Return &amp; Resubmit<span class="count" id="cnt-ret">0</span></button>
       </nav>
@@ -299,10 +334,10 @@ td.tl { padding-top: 8px; }
       <nav class="nav">
         <button data-soon="Partner / Mitra"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14c2 .8 3 2.8 3 6"/></svg>Partner / Mitra<span class="soon">Segera</span></button>
         <button data-soon="Laporan Bulanan"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Laporan Bulanan<span class="soon">Segera</span></button>
-        <button data-soon="Pengaturan"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Pengaturan<span class="soon">Segera</span></button>
+        <button data-soon="Pengaturan"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Pengaturan<span class="soon">Segera</span></button>
       </nav>
     </div>
-    <div class="side-foot">Sumber: Report Status Invoice Paid &amp; Database Project Outbound. Update 16-Okt-26.</div>
+    <div class="side-foot">Sumber: Report Status Invoice Paid &amp; Database Project Outbound (rev. 5). Update 16-Okt-26.</div>
   </aside>
 
   <main class="main" id="main">
@@ -313,10 +348,13 @@ td.tl { padding-top: 8px; }
           <h1>Dashboard Paid Monthly Outbound &amp; Inbound</h1>
           <div class="sub" id="sub"></div>
         </div>
-        <label class="search">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input id="q" type="search" placeholder="Cari partner, deskripsi, no. invoice" aria-label="Cari invoice">
-        </label>
+        <div class="head-tools">
+          <label class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="q" type="search" placeholder="Cari partner, deskripsi, no. invoice" aria-label="Cari invoice">
+          </label>
+          <button class="theme-btn" id="theme" type="button" aria-pressed="false"></button>
+        </div>
       </header>
 
       <div class="months" role="tablist" aria-label="Pilih bulan">
@@ -326,28 +364,45 @@ td.tl { padding-top: 8px; }
 
       <section class="kpis" id="kpis"></section>
 
-      <section class="panels" id="panels">
+      <section class="card insights">
+        <div class="ins-h">
+          <div><h2 id="ins-title">Ringkasan analisis</h2><p>Temuan utama dari invoice paid bulan terpilih, dihitung otomatis dari data.</p></div>
+        </div>
+        <div class="ins-grid" id="ins"></div>
+        <div class="ins-foot" id="ins-foot"></div>
+      </section>
+
+      <section class="panels">
         <div class="card">
           <div class="card-h">
-            <div><h2>Rata-rata jarak per tahap</h2><p>Hari kalender dari Submit Invoice sampai Paid</p></div>
+            <div><h2 id="stage-title">Ke mana waktu habis?</h2><p>Rata-rata hari kalender per invoice, dari Submit Invoice sampai Paid</p></div>
             <div class="legend">
-              <span><i style="background:var(--s1)"></i>Review awal</span>
-              <span><i style="background:var(--s2)"></i>Return &amp; revisi</span>
+              <span><i style="background:var(--s1)"></i>Review dokumen</span>
+              <span><i style="background:var(--s2)"></i>Revisi partner</span>
               <span><i style="background:var(--s3)"></i>Menuju paid</span>
             </div>
           </div>
           <div class="chart" id="chart-stage"></div>
         </div>
         <div class="card">
-          <div class="card-h"><div><h2>Nilai paid per partner</h2><p>BAST Value, bulan terpilih</p></div></div>
+          <div class="card-h"><div><h2 id="partner-title">Nilai paid per partner</h2><p>BAST Value bulan terpilih</p></div></div>
           <div class="chart" id="chart-partner"></div>
         </div>
       </section>
 
       <section class="card">
         <div class="toolbar">
-          <div><h2 id="tbl-title">Invoice Paid</h2><p>Klik baris untuk melihat timeline lengkap. Jarak dihitung dalam hari kalender.</p></div>
+          <div><h2 id="tbl-title">Invoice Paid</h2><p>Return ke-n dan Resubmit ke-n sejajar dalam satu baris. Klik baris untuk melihat timeline lengkap.</p></div>
           <div class="seg" id="seg" role="tablist" aria-label="Jenis invoice"></div>
+        </div>
+        <div class="tlegend legend">
+          <span><i style="background:var(--s1)"></i>Review dokumen</span>
+          <span><i style="background:var(--s2)"></i>Revisi partner</span>
+          <span><i style="background:var(--s3)"></i>Menuju paid</span>
+          <span><i class="ring" style="border-color:var(--ink-2)"></i>Submit</span>
+          <span><i class="dot" style="background:var(--s2)"></i>Return</span>
+          <span><i class="ring" style="border-color:var(--s1)"></i>Resubmit</span>
+          <span><i class="dot" style="background:var(--good)"></i>Paid</span>
         </div>
         <div id="tbl"></div>
       </section>
@@ -362,30 +417,51 @@ td.tl { padding-top: 8px; }
 <script>
 /* =====================================================================
    DATA — tambah baris baru di sini. Bulan dashboard ditentukan dari "paid".
-   Format tanggal: YYYY-MM-DD. returns = daftar Return Date (boleh kosong).
-   dummy: true = Return/Resubmit masih data contoh.
+   Format tanggal: YYYY-MM-DD.
+   cycles = siklus Return -> Resubmit, berurutan: [["return ke-1", "resubmit ke-1"], ["return ke-2", "resubmit ke-2"], ...]
+            isi null bila tanggal resubmit belum tercatat. Kosongkan [] bila tidak pernah di-return.
+   dummy: true = tanggal Return/Resubmit masih data contoh.
    ===================================================================== */
 const DATA = [
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan 2 x PDU Rack Standard Local Brand Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-05-11", value: 19000000, invNo: "128/VMP-INV/FA/V/2026", submit: "2026-02-12", status: "Paid", returns: ["2026-06-08", "2026-07-10", "2026-08-11"], resubmit: "2026-09-17", paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte MMR B To Rack NPCT1 SH Room L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1400000, invNo: "196/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Telkom MMRA GF to Bukopin GF Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1700000, invNo: "194/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-07-23", "2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte To Sigma Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1800000, invNo: "197/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-09-04"], resubmit: "2026-09-17", paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XL MMR A L2 To Cage Jalin L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 2700000, invNo: "193/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-08-05", "2026-08-11"], resubmit: "2026-09-15", paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan Project XC Telkom To OJK Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1800000, invNo: "199/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid", returns: ["2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-25" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Lintas To MNC Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1600000, invNo: "200/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid", returns: ["2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-25" },
-  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Pengadaan Barang dan Jasa Dedicated Colocation Space 4 Rack DC Sentul", partner: "PT DKSH Market Expansion", invDate: "2026-05-11", value: 380000000, invNo: "4200026008", submit: "2026-05-21", status: "Paid", returns: ["2026-05-26", "2026-08-06"], resubmit: "2026-09-28", paid: "2026-09-28" },
-  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Working Room L1 DC STL", partner: "PT Gemilang Semesta Utama", invDate: "2026-07-15", value: 161530000, invNo: "021/NV-GMT/VII/2026", submit: "2026-07-30", status: "Paid", returns: [], resubmit: null, paid: "2026-09-29" },
-  { seg: "Inbound", type: "Project Delta", scope: "CX Consultant", desc: "Termin ke-1 (Sep 2025 - Maret 2026) Cx Consultant", partner: "Commtech (Asia) Limited", invDate: "2026-07-02", value: 3024040000, invNo: "CMIDO2607056", submit: "2026-07-13", status: "Paid", returns: ["2026-07-24"], resubmit: "2026-08-05", paid: "2026-09-15", dummy: true },
-  { seg: "Inbound", type: "Project Delta", scope: "General Contractor", desc: "General Contractor MATERIALS For Project Delta Level 3 And 4 Fit Out Work - Main Long Lead Equipment Arrival on Site - LLEC 9", partner: "PT Huawei Tech Investment", invDate: "2026-03-30", value: 2157840000, invNo: "PT2609125", submit: "2026-05-21", status: "Paid", returns: ["2026-06-05", "2026-07-14"], resubmit: "2026-08-25", paid: "2026-09-28", dummy: true },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan 2 x PDU Rack Standard Local Brand Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 19000000, invNo: "128/VMP-INV/FA/V/2026", submit: "2026-02-12", status: "Paid",
+    cycles: [["2026-06-08", "2026-06-15"], ["2026-07-10", "2026-08-10"], ["2026-08-11", "2026-09-17"]], paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte MMR B To Rack NPCT1 SH Room L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1400000, invNo: "196/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
+    cycles: [["2026-08-05", "2026-09-15"]], paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Telkom MMRA GF to Bukopin GF Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1700000, invNo: "194/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
+    cycles: [["2026-07-23", "2026-07-23"], ["2026-08-05", "2026-09-15"]], paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte To Sigma Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1800000, invNo: "197/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
+    cycles: [["2026-09-04", "2026-09-17"]], paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XL MMR A L2 To Cage Jalin L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 2700000, invNo: "193/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
+    cycles: [["2026-08-05", "2026-08-10"], ["2026-08-11", "2026-09-15"]], paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan Project XC Telkom To OJK Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1800000, invNo: "199/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid",
+    cycles: [["2026-08-05", "2026-09-15"]], paid: "2026-09-25" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Lintas To MNC Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1600000, invNo: "200/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid",
+    cycles: [["2026-08-05", "2026-09-15"]], paid: "2026-09-25" },
+  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Pengadaan Barang dan Jasa Dedicated Colocation Space 4 Rack DC Sentul", partner: "PT DKSH Market Expansion", value: 380000000, invNo: "4200026008", submit: "2026-05-21", status: "Paid",
+    cycles: [["2026-05-26", null], ["2026-08-06", "2026-09-28"]], paid: "2026-09-28" },
+  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Working Room L1 DC STL", partner: "PT Gemilang Semesta Utama", value: 161530000, invNo: "021/NV-GMT/VII/2026", submit: "2026-07-30", status: "Paid",
+    cycles: [["2026-08-20", "2026-09-17"], ["2026-09-18", "2026-09-22"], ["2026-09-29", "2026-09-29"]], paid: "2026-09-29" },
+  { seg: "Inbound", type: "Project Delta", scope: "CX Consultant", desc: "Termin ke-1 (Sep 2025 - Maret 2026) Cx Consultant", partner: "Commtech (Asia) Limited", value: 3024040000, invNo: "CMIDO2607056", submit: "2026-07-13", status: "Paid",
+    cycles: [["2026-07-24", "2026-08-05"]], paid: "2026-09-15", dummy: true },
+  { seg: "Inbound", type: "Project Delta", scope: "General Contractor", desc: "General Contractor MATERIALS For Project Delta Level 3 And 4 Fit Out Work - Main Long Lead Equipment Arrival on Site - LLEC 9", partner: "PT Huawei Tech Investment", value: 2157840000, invNo: "PT2609125", submit: "2026-05-21", status: "Paid",
+    cycles: [["2026-06-05", "2026-06-20"], ["2026-07-14", "2026-08-25"]], paid: "2026-09-28", dummy: true },
 ];
 
 const YEAR = 2026;
 const TODAY = "2026-10-16";
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const MSH = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+const STAGE = {
+  rev: { name: "Review dokumen", col: "var(--s1)" },
+  fix: { name: "Revisi partner", col: "var(--s2)" },
+  pay: { name: "Menuju paid", col: "var(--s3)" },
+};
 
-const state = { month: 8, seg: "all", onlyRet: false, q: "", sel: null };
-try { const m = +localStorage.getItem("pm-month"); if (m >= 0 && m < 12 && localStorage.getItem("pm-month") !== null) state.month = m; } catch (e) {}
+const state = { month: 8, seg: "all", onlyRet: false, q: "", sel: null, dark: false };
+try {
+  const m = localStorage.getItem("pm-month"); if (m !== null && +m >= 0 && +m < 12) state.month = +m;
+  state.dark = localStorage.getItem("pm-theme") === "dark";
+} catch (e) {}
 
 /* ---------- helpers ---------- */
 const D = s => new Date(s + "T00:00:00");
@@ -394,36 +470,66 @@ const fmtD = s => { const d = D(s); return String(d.getDate()).padStart(2, "0") 
 const rp = n => "Rp" + Math.round(n).toLocaleString("id-ID");
 const rpShort = n => n >= 1e9 ? "Rp" + (n / 1e9).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " M"
   : n >= 1e6 ? "Rp" + (n / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + " jt" : rp(n);
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
 const avg = (a, f) => a.length ? sum(a, f) / a.length : 0;
+const short = s => s.length > 34 ? s.slice(0, 33).trim() + "…" : s;
 const $ = id => document.getElementById(id);
 
-/* Tahap: s1 submit→return pertama, s2 return pertama→resubmit, s3 (re)submit terakhir→paid */
-function stages(r) {
-  const last = r.resubmit || (r.returns.length ? r.returns[r.returns.length - 1] : r.submit);
-  if (!r.returns.length) return { s1: 0, s2: 0, s3: days(r.submit, r.paid), total: days(r.submit, r.paid), from3: r.submit };
-  return {
-    s1: days(r.submit, r.returns[0]),
-    s2: days(r.returns[0], last),
-    s3: days(last, r.paid),
-    total: days(r.submit, r.paid),
-    from3: last
-  };
+/* Bangun urutan kejadian + segmen tahap untuk satu invoice.
+   rev: submit/resubmit -> return berikutnya, fix: return -> resubmit, pay: (re)submit terakhir -> paid */
+function build(r) {
+  const ev = [{ l: "Submit Invoice", d: r.submit, t: "submit" }];
+  const segs = [];
+  const multi = r.cycles.length > 1;
+  let prev = r.submit;
+  r.cycles.forEach(([ret, res], i) => {
+    const n = multi ? " ke-" + (i + 1) : "";
+    segs.push({ a: prev, b: ret, k: "rev" });
+    ev.push({ l: "Return" + n, d: ret, t: "ret" });
+    if (res) {
+      segs.push({ a: ret, b: res, k: "fix" });
+      ev.push({ l: "Resubmit" + n, d: res, t: "res" });
+      prev = res;
+    } else {
+      ev.push({ l: "Resubmit" + n, d: null, t: "miss" });
+      const nx = r.cycles[i + 1];
+      if (nx) { segs.push({ a: ret, b: nx[0], k: "fix", gap: true }); prev = nx[0]; }
+      else prev = ret;
+    }
+  });
+  segs.push({ a: prev, b: r.paid, k: "pay" });
+  ev.push({ l: "Paid", d: r.paid, t: "paid" });
+  const st = { rev: 0, fix: 0, pay: 0 };
+  segs.forEach(s => st[s.k] += days(s.a, s.b));
+  st.total = days(r.submit, r.paid);
+  st.lastFrom = prev;
+  return { ev, segs, st };
 }
-DATA.forEach(r => r.st = stages(r));
+DATA.forEach(r => Object.assign(r, build(r)));
 
 const inMonth = (r, m) => { const d = D(r.paid); return d.getFullYear() === YEAR && d.getMonth() === m; };
 const monthRows = m => DATA.filter(r => inMonth(r, m));
 const segRows = rows => state.seg === "all" ? rows : rows.filter(r => r.seg === state.seg);
 const viewRows = () => {
   let rows = segRows(monthRows(state.month));
-  if (state.onlyRet) rows = rows.filter(r => r.returns.length);
+  if (state.onlyRet) rows = rows.filter(r => r.cycles.length);
   const q = state.q.trim().toLowerCase();
   if (q) rows = rows.filter(r => (r.desc + " " + r.partner + " " + r.invNo + " " + r.scope).toLowerCase().includes(q));
   return rows;
 };
 const lastDay = m => new Date(YEAR, m + 1, 0).getDate();
+
+/* ---------- theme ---------- */
+function applyTheme() {
+  document.documentElement.classList.toggle("dark", state.dark);
+  const b = $("theme");
+  b.setAttribute("aria-pressed", state.dark);
+  b.innerHTML = state.dark
+    ? `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Mode terang`
+    : `<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Mode gelap`;
+}
 
 /* ---------- months ---------- */
 function renderMonths() {
@@ -442,7 +548,7 @@ function renderHead() {
   const all = monthRows(m);
   $("cnt-out").textContent = all.filter(r => r.seg === "Outbound").length;
   $("cnt-in").textContent = all.filter(r => r.seg === "Inbound").length;
-  $("cnt-ret").textContent = all.filter(r => r.returns.length).length;
+  $("cnt-ret").textContent = all.filter(r => r.cycles.length).length;
 }
 
 function renderKpis() {
@@ -450,11 +556,9 @@ function renderKpis() {
   const rows = segRows(all);
   const out = all.filter(r => r.seg === "Outbound"), inn = all.filter(r => r.seg === "Inbound");
   const tot = sum(all, r => r.value), vo = sum(out, r => r.value), vi = sum(inn, r => r.value);
-  const ret = rows.filter(r => r.returns.length);
+  const ret = rows.filter(r => r.cycles.length);
   const lead = rows.length ? Math.round(avg(rows, r => r.st.total)) : null;
-  const longest = rows.slice().sort((a, b) => b.st.total - a.st.total)[0];
-  const fastest = rows.slice().sort((a, b) => a.st.total - b.st.total)[0];
-  const pctO = tot ? vo / tot * 100 : 0;
+  const sorted = rows.slice().sort((a, b) => a.st.total - b.st.total);
   $("kpis").innerHTML = `
     <div class="kpi lead">
       <div class="k">Total Paid · ${MONTHS[state.month]}</div>
@@ -464,23 +568,112 @@ function renderKpis() {
     <div class="kpi">
       <div class="k">Paid Outbound</div>
       <div class="v">${rp(vo)}</div>
-      <div class="n"><b>${out.length}</b> invoice · ${tot ? pctO.toLocaleString("id-ID", { maximumFractionDigits: 1 }) : 0}% nilai</div>
+      <div class="n"><b>${out.length}</b> invoice · ${pct(vo, tot)}% nilai</div>
     </div>
     <div class="kpi">
       <div class="k">Paid Inbound</div>
       <div class="v">${rp(vi)}</div>
-      <div class="n"><b>${inn.length}</b> invoice · ${tot ? (100 - pctO).toLocaleString("id-ID", { maximumFractionDigits: 1 }) : 0}% nilai</div>
+      <div class="n"><b>${inn.length}</b> invoice · ${tot ? 100 - pct(vo, tot) : 0}% nilai</div>
     </div>
     <div class="kpi">
-      <div class="k"><i style="background:var(--s2)"></i>Sempat di-return</div>
-      <div class="v">${rows.length ? ret.length + " / " + rows.length : "–"}</div>
-      <div class="n">${rows.length ? `<b>${sum(rows, r => r.returns.length)}</b> kali return total` : "Tidak ada invoice"}</div>
+      <div class="k"><i style="background:var(--s2)"></i>Total return</div>
+      <div class="v">${rows.length ? sum(rows, r => r.cycles.length) + " kali" : "–"}</div>
+      <div class="n">${rows.length ? `<b>${ret.length} dari ${rows.length}</b> invoice sempat di-return` : "Tidak ada invoice"}</div>
     </div>
     <div class="kpi">
       <div class="k">Rata-rata Submit → Paid</div>
       <div class="v">${lead === null ? "–" : lead + " hari"}</div>
-      <div class="n">${rows.length ? `Tercepat <b>${fastest.st.total} h</b> · terlama <b>${longest.st.total} h</b>` : "Tidak ada invoice"}</div>
+      <div class="n">${rows.length ? `Tercepat <b>${sorted[0].st.total} h</b> · terlama <b>${sorted[sorted.length - 1].st.total} h</b>` : "Tidak ada invoice"}</div>
     </div>`;
+}
+
+/* ---------- insights ---------- */
+const ICON = {
+  money: `<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>`,
+  ret: `<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  check: `<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>`,
+  slow: `<svg viewBox="0 0 24 24"><path d="M3 17h18"/><path d="M6 17V9M11 17V5M16 17v-6"/></svg>`,
+  warn: `<svg viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg>`,
+};
+function renderInsights() {
+  const all = monthRows(state.month);
+  const rows = segRows(all);
+  const label = state.seg === "all" ? "" : " " + state.seg;
+  $("ins-title").textContent = `Ringkasan analisis${label} · ${MONTHS[state.month]} ${YEAR}`;
+  if (!rows.length) {
+    $("ins").innerHTML = `<div class="ins" style="grid-column:1/-1"><div class="ic">${ICON.clock}</div><div><h3>Belum ada invoice paid</h3><p>Pilih bulan bertanda titik merah, atau tambahkan data paid untuk ${MONTHS[state.month]} ${YEAR}.</p></div></div>`;
+    $("ins-foot").textContent = "";
+    return;
+  }
+  const items = [];
+  const tot = sum(rows, r => r.value);
+
+  // 1. Konsentrasi nilai
+  const byP = {};
+  rows.forEach(r => byP[r.partner] = (byP[r.partner] || 0) + r.value);
+  const ps = Object.entries(byP).sort((a, b) => b[1] - a[1]);
+  if (state.seg === "all") {
+    const vi = sum(rows.filter(r => r.seg === "Inbound"), r => r.value), vo = tot - vi;
+    const big = vi >= vo ? "Inbound" : "Outbound";
+    const bigV = Math.max(vi, vo), bigN = rows.filter(r => r.seg === big).length;
+    items.push({ ic: "money", c: "", tag: "Nilai", h: `${pct(bigV, tot)}% nilai paid berasal dari ${big}`,
+      p: `<b>${rpShort(bigV)}</b> dari ${bigN} invoice. Partner terbesar: <b>${esc(ps[0][0])}</b> (${pct(ps[0][1], tot)}%).` });
+  } else {
+    items.push({ ic: "money", c: "", tag: "Nilai", h: `${esc(ps[0][0])} menyumbang ${pct(ps[0][1], tot)}% nilai`,
+      p: `${rpShort(ps[0][1])} dari total <b>${rpShort(tot)}</b> (${rows.length} invoice, ${ps.length} partner).` });
+  }
+
+  // 2. Return
+  const retRows = rows.filter(r => r.cycles.length);
+  const totRet = sum(rows, r => r.cycles.length);
+  const maxC = Math.max(...rows.map(r => r.cycles.length));
+  const most = rows.filter(r => r.cycles.length === maxC && maxC > 0);
+  items.push({ ic: "ret", c: "orange", tag: "Return",
+    h: retRows.length === rows.length ? `Semua invoice sempat di-return, total ${totRet} kali` : `${retRows.length} dari ${rows.length} invoice sempat di-return`,
+    p: maxC > 0 ? `Paling sering ${maxC}×: <b>${most.map(r => esc(short(r.desc))).join("</b> dan <b>")}</b>.` : "Tidak ada invoice yang di-return bulan ini." });
+
+  // 3. Tahap terlama
+  const a = { rev: avg(rows, r => r.st.rev), fix: avg(rows, r => r.st.fix), pay: avg(rows, r => r.st.pay) };
+  const tAvg = a.rev + a.fix + a.pay;
+  const top = Object.keys(a).sort((x, y) => a[y] - a[x])[0];
+  const others = Object.keys(a).filter(k => k !== top);
+  items.push({ ic: "clock", c: top === "rev" ? "blue" : top === "fix" ? "orange" : "aqua", tag: "Waktu",
+    h: `Waktu terbanyak habis di ${STAGE[top].name.toLowerCase()}`,
+    p: `Rata-rata <b>${Math.round(a[top])} hari</b> per invoice (${pct(a[top], tAvg)}% dari total), dibanding ${STAGE[others[0]].name.toLowerCase()} ${Math.round(a[others[0]])} hari dan ${STAGE[others[1]].name.toLowerCase()} ${Math.round(a[others[1]])} hari.` });
+
+  // 4. Setelah resubmit terakhir
+  const pays = rows.map(r => ({ r, d: r.st.pay })).sort((x, y) => x.d - y.d);
+  items.push({ ic: "check", c: "aqua", tag: "Pembayaran",
+    h: `Paid rata-rata ${Math.round(a.pay)} hari setelah dokumen terakhir masuk`,
+    p: `Tercepat <b>${pays[0].d} hari</b> (${esc(short(pays[0].r.partner))}), terlama <b>${pays[pays.length - 1].d} hari</b> (${esc(short(pays[pays.length - 1].r.partner))}${pays[pays.length - 1].r.dummy ? ", dummy" : ""}).` });
+
+  // 5. Invoice terlama
+  const lon = rows.slice().sort((x, y) => y.st.total - x.st.total)[0];
+  items.push({ ic: "slow", c: "", tag: "Terlama",
+    h: `${esc(short(lon.desc))}: ${lon.st.total} hari sampai paid`,
+    p: `Submit ${fmtD(lon.submit)}, paid ${fmtD(lon.paid)}, ${lon.cycles.length}× return. Rata-rata semua invoice <b>${Math.round(avg(rows, r => r.st.total))} hari</b>.` });
+
+  // 6. Data perlu dicek
+  const missing = [];
+  rows.forEach(r => r.cycles.forEach(([ret, res], i) => { if (!res) missing.push({ r, i, ret }); }));
+  const dummies = rows.filter(r => r.dummy);
+  if (missing.length) {
+    items.push({ ic: "warn", c: "warn", tag: "Perlu dicek",
+      h: `${missing.length} return belum punya tanggal resubmit`,
+      p: missing.map(m => `<b>${esc(short(m.r.partner))}</b> return ke-${m.i + 1} (${fmtD(m.ret)})`).join(", ") + ". Lengkapi di Database Project Outbound." });
+  } else if (dummies.length) {
+    items.push({ ic: "warn", c: "warn", tag: "Perlu dicek",
+      h: `${dummies.length} invoice masih memakai tanggal dummy`,
+      p: `Return/Resubmit untuk ${dummies.map(r => `<b>${esc(short(r.partner))}</b>`).join(", ")} masih contoh.` });
+  } else {
+    const same = rows.filter(r => r.cycles.some(([x, y]) => y && days(x, y) === 0)).length;
+    items.push({ ic: "check", c: "aqua", tag: "Data", h: "Tanggal Return & Resubmit lengkap",
+      p: same ? `${same} invoice di-resubmit di hari yang sama dengan tanggal return.` : "Semua siklus return sudah punya tanggal resubmit." });
+  }
+
+  $("ins").innerHTML = items.map(it => `<div class="ins"><div class="ic ${it.c}">${ICON[it.ic]}</div><div><div class="tag">${it.tag}</div><h3>${it.h}</h3><p>${it.p}</p></div></div>`).join("");
+  $("ins-foot").textContent = dummies.length ? `Catatan: ${dummies.length} invoice Inbound memakai tanggal Return/Resubmit dummy, jadi angka waktu yang melibatkan Inbound masih perkiraan.` : "";
 }
 
 /* ---------- charts ---------- */
@@ -488,19 +681,23 @@ function renderStageChart() {
   const all = monthRows(state.month);
   const groups = ["Outbound", "Inbound"].filter(g => state.seg === "all" || state.seg === g)
     .map(g => ({ g, rows: all.filter(r => r.seg === g) })).filter(x => x.rows.length);
-  if (!groups.length) { $("chart-stage").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; return; }
+  if (!groups.length) { $("chart-stage").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; $("stage-title").textContent = "Ke mana waktu habis?"; return; }
+  const keys = ["rev", "fix", "pay"];
   groups.forEach(x => {
-    x.a = ["s1", "s2", "s3"].map(k => avg(x.rows, r => r.st[k]));
+    x.a = keys.map(k => avg(x.rows, r => r.st[k]));
     x.t = avg(x.rows, r => r.st.total);
     x.dummy = x.rows.some(r => r.dummy);
   });
+  const rows = segRows(all);
+  const ov = keys.map(k => avg(rows, r => r.st[k]));
+  const topK = keys[ov.indexOf(Math.max(...ov))];
+  $("stage-title").textContent = `Waktu terlama: ${STAGE[topK].name}`;
   const W = 640, L = 108, R = 52, rowH = 56, top = 22;
   const max = Math.max(...groups.map(x => x.t));
   const step = max > 150 ? 30 : max > 60 ? 15 : 7;
   const dmax = Math.ceil(max / step) * step || step;
   const x = v => L + v / dmax * (W - L - R);
   const H = top + groups.length * rowH + 4;
-  const cols = ["var(--s1)", "var(--s2)", "var(--s3)"], names = ["Review awal", "Return & revisi", "Menuju paid"];
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rata-rata jarak per tahap">`;
   for (let v = 0; v <= dmax; v += step) {
     s += `<line x1="${x(v)}" x2="${x(v)}" y1="${top - 6}" y2="${H - 4}" stroke="var(--line)" stroke-width="1"/>`;
@@ -514,18 +711,17 @@ function renderStageChart() {
     gx.a.forEach((v, k) => {
       if (v <= 0) return;
       const x0 = x(acc) + (acc > 0 ? 1 : 0), x1 = x(acc + v) - 1;
-      const tip = `<b>${gx.g} · ${names[k]}</b><br>Rata-rata ${Math.round(v)} hari`;
-      s += `<rect x="${x0}" y="${y}" width="${Math.max(2, x1 - x0)}" height="18" rx="4" fill="${cols[k]}" data-tip="${esc(tip)}"/>`;
+      const tip = `<b>${gx.g} · ${STAGE[keys[k]].name}</b><br>Rata-rata ${Math.round(v)} hari (${pct(v, gx.t)}%)`;
+      s += `<rect x="${x0}" y="${y}" width="${Math.max(2, x1 - x0)}" height="18" rx="4" fill="${STAGE[keys[k]].col}" data-tip="${esc(tip)}"/>`;
       acc += v;
     });
     s += `<text x="${x(acc) + 8}" y="${y + 13}" font-size="12.5" font-weight="700" fill="var(--ink)">${Math.round(gx.t)} h</text>`;
     let tx = L;
-    const parts = gx.a.map((v, k) => ({ v, k }));
-    parts.forEach(p => {
-      s += `<rect x="${tx}" y="${y + 26}" width="8" height="8" rx="2" fill="${cols[p.k]}"/>`;
-      const label = `${names[p.k]} ${Math.round(p.v)} h`;
-      s += `<text x="${tx + 12}" y="${y + 33.5}" font-size="11" fill="var(--ink-2)">${label}</text>`;
-      tx += 12 + label.length * 6.1 + 16;
+    gx.a.forEach((v, k) => {
+      s += `<rect x="${tx}" y="${y + 26}" width="8" height="8" rx="2" fill="${STAGE[keys[k]].col}"/>`;
+      const lbl = `${STAGE[keys[k]].name} ${Math.round(v)} h`;
+      s += `<text x="${tx + 12}" y="${y + 33.5}" font-size="11" fill="var(--ink-2)">${lbl}</text>`;
+      tx += 12 + lbl.length * 6.1 + 14;
     });
   });
   $("chart-stage").innerHTML = s + "</svg>";
@@ -536,7 +732,10 @@ function renderPartnerChart() {
   const map = {};
   rows.forEach(r => { (map[r.partner] = map[r.partner] || { v: 0, n: 0, seg: r.seg }); map[r.partner].v += r.value; map[r.partner].n++; });
   const items = Object.entries(map).map(([p, o]) => ({ p, ...o })).sort((a, b) => b.v - a.v);
-  if (!items.length) { $("chart-partner").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; return; }
+  if (!items.length) { $("chart-partner").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; $("partner-title").textContent = "Nilai paid per partner"; return; }
+  const tot = sum(items, i => i.v);
+  const topN = Math.min(2, items.length), topV = sum(items.slice(0, topN), i => i.v);
+  $("partner-title").textContent = items.length > 2 ? `${topN} partner teratas = ${pct(topV, tot)}% nilai paid` : "Nilai paid per partner";
   const W = 520, L = 176, R = 78, bh = 14, gap = 12, top = 4;
   const max = Math.max(...items.map(i => i.v));
   const x = v => v / max * (W - L - R);
@@ -545,7 +744,7 @@ function renderPartnerChart() {
   items.forEach((it, i) => {
     const y = top + i * (bh + gap);
     const name = it.p.length > 27 ? it.p.slice(0, 26) + "…" : it.p;
-    const tip = `<b>${esc(it.p)}</b><br>${it.seg} · ${it.n} invoice<br>${rp(it.v)}`;
+    const tip = `<b>${esc(it.p)}</b><br>${it.seg} · ${it.n} invoice<br>${rp(it.v)} (${pct(it.v, tot)}%)`;
     s += `<text x="0" y="${y + 11}" font-size="11.5" fill="var(--ink-2)">${esc(name)}</text>`;
     s += `<rect x="${L}" y="${y - 4}" width="${W - L}" height="${bh + 8}" fill="transparent" data-tip="${esc(tip)}"/>`;
     s += `<rect x="${L}" y="${y}" width="${Math.max(3, x(it.v))}" height="${bh}" rx="4" fill="var(--bar)" pointer-events="none"/>`;
@@ -555,24 +754,25 @@ function renderPartnerChart() {
 }
 
 /* ---------- table ---------- */
-const TLW = 280;
+const TLW = 224;
+const isoMonth = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
 function domainFor(rows) {
-  if (!rows.length) return null;
   const min = rows.map(r => D(r.submit)).reduce((a, b) => a < b ? a : b);
   const max = rows.map(r => D(r.paid)).reduce((a, b) => a > b ? a : b);
   const a = new Date(min.getFullYear(), min.getMonth(), 1);
   const b = new Date(max.getFullYear(), max.getMonth() + 1, 1);
   return { a, b, x: d => 8 + (D(d) - a) / (b - a) * (TLW - 16) };
 }
+function eachMonth(dom, fn, inclusive) {
+  for (let d = new Date(dom.a); inclusive ? d <= dom.b : d < dom.b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) fn(d);
+}
 
 function tlHeader(dom) {
   let s = `<svg width="${TLW}" height="16" viewBox="0 0 ${TLW} 16" aria-hidden="true">`;
-  const months = [];
-  for (let d = new Date(dom.a); d < dom.b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) months.push(new Date(d));
-  const every = months.length > 10 ? 2 : 1;
-  months.forEach((d, i) => {
-    const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
-    const xx = dom.x(iso);
+  const ms = []; eachMonth(dom, d => ms.push(d));
+  const every = ms.length > 10 ? 2 : 1;
+  ms.forEach((d, i) => {
+    const xx = dom.x(isoMonth(d));
     s += `<line x1="${xx}" x2="${xx}" y1="10" y2="16" stroke="var(--ink-3)" stroke-width="1"/>`;
     if (i % every === 0) s += `<text x="${xx + 3}" y="9" font-size="10" font-weight="600" fill="var(--ink-2)">${MSH[d.getMonth()]}</text>`;
   });
@@ -580,52 +780,52 @@ function tlHeader(dom) {
 }
 
 function tlRow(r, dom) {
-  const x = dom.x, y = 12, st = r.st;
+  const x = dom.x, y = 12;
   let s = `<svg width="${TLW}" height="24" viewBox="0 0 ${TLW} 24" role="img" aria-label="Timeline ${esc(r.invNo)}">`;
-  // month gridlines
-  for (let d = new Date(dom.a); d <= dom.b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-    const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
-    s += `<line x1="${x(iso)}" x2="${x(iso)}" y1="2" y2="22" stroke="var(--line)" stroke-width="1"/>`;
-  }
-  const seg = (a, b, col, label) => {
-    const x0 = x(a) + 1, x1 = x(b) - 1;
-    const tip = `<b>${label}</b><br>${fmtD(a)} → ${fmtD(b)}<br>${days(a, b)} hari`;
-    s += `<rect x="${x0}" y="${y - 3}" width="${Math.max(2, x1 - x0)}" height="6" rx="3" fill="${col}"/>`;
-    s += `<rect x="${x(a)}" y="0" width="${Math.max(6, x(b) - x(a))}" height="24" fill="transparent" data-tip="${esc(tip)}"/>`;
-  };
-  if (r.returns.length) {
-    seg(r.submit, r.returns[0], "var(--s1)", "Review awal");
-    seg(r.returns[0], st.from3, "var(--s2)", "Return & revisi");
-  }
-  if (days(st.from3, r.paid) > 0) seg(st.from3, r.paid, "var(--s3)", "Menuju paid");
-  const dot = (d, fill, stroke, label, rr = 4) => {
-    s += `<circle cx="${x(d)}" cy="${y}" r="${rr}" fill="${fill}" stroke="${stroke}" stroke-width="2" data-tip="${esc(`<b>${label}</b><br>${fmtD(d)}`)}"/>`;
-  };
-  dot(r.submit, "var(--surface)", "var(--ink-2)", "Submit Invoice");
-  r.returns.forEach((d, i) => dot(d, "var(--s2)", "var(--surface)", "Return " + (r.returns.length > 1 ? i + 1 : "")));
-  if (r.resubmit) dot(r.resubmit, "var(--surface)", "var(--s3)", "Resubmit");
-  dot(r.paid, "var(--good)", "var(--surface)", "Paid", 5);
+  eachMonth(dom, d => { const xx = x(isoMonth(d)); s += `<line x1="${xx}" x2="${xx}" y1="2" y2="22" stroke="var(--line)" stroke-width="1"/>`; }, true);
+  r.segs.forEach(sg => {
+    const n = days(sg.a, sg.b);
+    if (n <= 0) return;
+    const x0 = x(sg.a) + 1, x1 = x(sg.b) - 1;
+    const tip = `<b>${STAGE[sg.k].name}</b>${sg.gap ? " (tanggal resubmit tidak tercatat)" : ""}<br>${fmtD(sg.a)} → ${fmtD(sg.b)}<br>${n} hari`;
+    s += `<rect x="${x0}" y="${y - 3}" width="${Math.max(2, x1 - x0)}" height="6" rx="3" fill="${STAGE[sg.k].col}"${sg.gap ? ' opacity=".45"' : ""}/>`;
+    s += `<rect x="${x(sg.a)}" y="0" width="${Math.max(6, x(sg.b) - x(sg.a))}" height="24" fill="transparent" data-tip="${esc(tip)}"/>`;
+  });
+  r.ev.forEach(e => {
+    if (!e.d) return;
+    const tip = esc(`<b>${e.l}</b><br>${fmtD(e.d)}`);
+    if (e.t === "submit") s += `<circle cx="${x(e.d)}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--ink-2)" stroke-width="2" data-tip="${tip}"/>`;
+    if (e.t === "ret") s += `<circle cx="${x(e.d)}" cy="${y}" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2" data-tip="${tip}"/>`;
+    if (e.t === "res") s += `<circle cx="${x(e.d)}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--s1)" stroke-width="2" data-tip="${tip}"/>`;
+    if (e.t === "paid") s += `<circle cx="${x(e.d)}" cy="${y}" r="5" fill="var(--good)" stroke="var(--surface)" stroke-width="2" data-tip="${tip}"/>`;
+  });
   return s + "</svg>";
 }
 
 function rowHtml(r, i, dom) {
-  const st = r.st;
+  const st = r.st, multi = r.cycles.length > 1;
   const dm = r.dummy ? `<span class="dummy">Dummy</span>` : "";
-  const ret = r.returns.length
-    ? `<div class="dl">${r.returns.map((d, k) => `<span class="d">${r.returns.length > 1 ? `<span class="rk">R${k + 1}</span>` : ""}${fmtD(d)}</span>`).join("")}<span class="gap"><b>+${st.s1} h</b> dari submit</span>${dm}</div>`
-    : `<span class="nil">Tidak ada</span>`;
-  const lastRet = r.returns[r.returns.length - 1];
-  const res = r.resubmit
-    ? `<div class="dl"><span class="d">${fmtD(r.resubmit)}</span><span class="gap"><b>+${days(lastRet || r.submit, r.resubmit)} h</b> dari return${r.returns.length > 1 ? " ke-" + r.returns.length : ""}</span>${dm}</div>`
-    : `<span class="nil">Tidak ada</span>`;
-  const paid = `<div class="dl"><span class="d">${fmtD(r.paid)}</span><span class="gap"><b>+${st.s3} h</b> dari ${r.resubmit ? "resubmit" : r.returns.length ? "return" : "submit"}</span></div>`;
+  let ret = `<span class="nil">Tidak ada</span>`, res = `<span class="nil">Tidak ada</span>`;
+  if (r.cycles.length) {
+    let prev = r.submit;
+    const rl = [], sl = [];
+    r.cycles.forEach(([a, b], k) => {
+      const rk = multi ? `<span class="rk">${k + 1}</span>` : "";
+      rl.push(`<div class="ln">${rk}<b>${fmtD(a)}</b><span class="g">+${days(prev, a)} h</span></div>`);
+      if (b) { sl.push(`<div class="ln">${rk}<b>${fmtD(b)}</b><span class="g">+${days(a, b)} h</span></div>`); prev = b; }
+      else { sl.push(`<div class="ln">${rk}<span class="miss">Belum tercatat</span></div>`); prev = a; }
+    });
+    ret = `<div class="cyc">${rl.join("")}${dm}</div>`;
+    res = `<div class="cyc">${sl.join("")}${dm}</div>`;
+  }
+  const lastEv = r.ev.filter(e => e.d && e.t !== "paid").pop();
+  const paid = `<div class="cyc"><div class="ln"><b>${fmtD(r.paid)}</b><span class="g">+${st.pay} h</span></div><span class="foot">dari ${lastEv.l.toLowerCase()}</span></div>`;
   return `<tr class="row${state.sel === r ? " sel" : ""}" tabindex="0" data-i="${DATA.indexOf(r)}">
     <td class="no">${i + 1}</td>
     <td class="nowrap">${esc(r.type)}</td>
     <td class="nowrap">${esc(r.scope)}</td>
     <td class="desc">${esc(r.desc)}</td>
     <td class="partner">${esc(r.partner)}</td>
-    <td class="date">${fmtD(r.invDate)}</td>
     <td class="num nowrap">${rp(r.value)}</td>
     <td class="mono nowrap">${esc(r.invNo)}</td>
     <td class="date">${fmtD(r.submit)}</td>
@@ -633,7 +833,7 @@ function rowHtml(r, i, dom) {
     <td>${ret}</td>
     <td>${res}</td>
     <td>${paid}</td>
-    <td class="tl"><div class="tl-cap"><b>${st.total} hari</b> submit → paid${r.returns.length ? ` · ${r.returns.length}× return` : ""}</div>${tlRow(r, dom)}</td>
+    <td class="tl"><div class="tl-cap"><b>${st.total} hari</b> submit → paid${r.cycles.length ? ` · ${r.cycles.length}× return` : ""}</div>${tlRow(r, dom)}</td>
   </tr>`;
 }
 
@@ -655,20 +855,22 @@ function renderTable() {
   if (!rows.length) { $("tbl").innerHTML = `<div class="empty"><b>Tidak ada yang cocok</b>Ubah kata kunci pencarian atau filter.</div>`; return; }
   const dom = domainFor(rows);
   let h = `<div class="tbl-wrap"><table><thead><tr>
-    <th>No</th><th>Type of Work</th><th>Scope of Work</th><th>Description</th><th>Partner</th><th>Invoice Date</th>
+    <th>No</th><th>Type of Work</th><th>Scope of Work</th><th>Description</th><th>Partner</th>
     <th class="num">BAST Value</th><th>Invoice Number</th><th>Submit Invoice Date</th><th>Invoice Status</th>
-    <th class="hl" style="--hc:var(--s2)">Return Date</th><th class="hl" style="--hc:var(--s3)">Resubmit Date</th><th class="hl" style="--hc:var(--good)">Paid Date</th>
-    <th class="tl-h">Timeline Submit → Paid<br>${tlHeader(dom)}</th>
+    <th class="hl" style="--hc:var(--s2)"><span>Return Date</span><small>+h dari (re)submit sebelumnya</small></th>
+    <th class="hl" style="--hc:var(--s1)"><span>Resubmit Date</span><small>+h dari return</small></th>
+    <th class="hl" style="--hc:var(--good)"><span>Paid Date</span><small>+h dari dokumen terakhir</small></th>
+    <th class="tl-h" style="white-space:nowrap">Timeline Submit → Paid<br>${tlHeader(dom)}</th>
   </tr></thead><tbody>`;
   ["Outbound", "Inbound"].forEach(g => {
     const gr = rows.filter(r => r.seg === g);
     if (!gr.length) return;
-    h += `<tr class="grp"><td colspan="14"><span class="gtag"><i></i>Paid ${g}</span><small>${gr.length} invoice${gr.some(r => r.dummy) ? " · Return &amp; Resubmit masih dummy" : ""}</small></td></tr>`;
+    h += `<tr class="grp"><td colspan="13"><span class="gtag"><i></i>Paid ${g}</span><small>${gr.length} invoice${gr.some(r => r.dummy) ? " · Return &amp; Resubmit masih dummy" : ""}</small></td></tr>`;
     gr.forEach((r, i) => h += rowHtml(r, i, dom));
-    h += `<tr class="sub"><td colspan="6">Subtotal ${g}</td><td class="num nowrap">${rp(sum(gr, r => r.value))}</td><td colspan="7"></td></tr>`;
+    h += `<tr class="sub"><td colspan="5">Subtotal ${g}</td><td class="num nowrap">${rp(sum(gr, r => r.value))}</td><td colspan="7"></td></tr>`;
   });
-  h += `<tr class="total"><td colspan="6">Total</td><td class="num nowrap">${rp(sum(rows, r => r.value))}</td><td colspan="7"></td></tr>`;
-  h += `</tbody></table></div><div class="note">Return Date dan Resubmit Date invoice Inbound masih dummy, menunggu data dari tim. “h” = hari kalender.</div>`;
+  h += `<tr class="total"><td colspan="5">Total</td><td class="num nowrap">${rp(sum(rows, r => r.value))}</td><td colspan="7"></td></tr>`;
+  h += `</tbody></table></div><div class="note">Kotak angka 1, 2, 3 = siklus ke-n: Return ke-n berpasangan dengan Resubmit ke-n di baris yang sama. “h” = hari kalender.${rows.some(r => r.dummy) ? " Return/Resubmit Inbound masih dummy." : ""}</div>`;
   $("tbl").innerHTML = h;
 }
 
@@ -676,24 +878,24 @@ function renderTable() {
 function openDrawer(r) {
   state.sel = r;
   const st = r.st;
-  const ev = [{ l: "Invoice Date", d: r.invDate, c: "var(--ink-3)" }, { l: "Submit Invoice", d: r.submit, c: "var(--ink-2)" }];
-  r.returns.forEach((d, i) => ev.push({ l: "Return" + (r.returns.length > 1 ? " ke-" + (i + 1) : ""), d, c: "var(--s2)" }));
-  if (r.resubmit) ev.push({ l: "Resubmit", d: r.resubmit, c: "var(--s3)" });
-  ev.push({ l: "Paid", d: r.paid, c: "var(--good)" });
-  const linkCol = (a, b) => b.l.startsWith("Return") && a.l === "Submit Invoice" ? "var(--s1)"
-    : a.l.startsWith("Return") ? "var(--s2)" : b.l === "Paid" ? "var(--s3)" : "var(--line)";
-  const linkTxt = (a, b) => b.l.startsWith("Return") && a.l === "Submit Invoice" ? "Review awal"
-    : a.l.startsWith("Return") && b.l.startsWith("Return") ? "Revisi, lalu di-return lagi"
-    : a.l.startsWith("Return") && b.l === "Resubmit" ? "Revisi oleh partner"
-    : b.l === "Paid" ? "Menuju paid" : "Invoice dibuat → disubmit";
-  let steps = "";
-  ev.forEach((e, i) => {
-    steps += `<li><span class="dot" style="border-color:${e.c}${e.l === "Paid" ? ";background:" + e.c : ""}"></span><span class="lbl">${e.l}</span><span class="dt">${fmtD(e.d)}</span></li>`;
-    if (i < ev.length - 1) {
-      const n = ev[i + 1], g = days(e.d, n.d);
-      steps += `<li class="link"><span class="bar" style="background:${linkCol(e, n)};min-height:${Math.min(64, 24 + Math.abs(g) / 3)}px"></span><span class="txt"><b>${g >= 0 ? "+" : ""}${g} hari</b> · ${linkTxt(e, n)}</span></li>`;
+  const dotCol = { submit: "var(--ink-2)", ret: "var(--s2)", res: "var(--s1)", miss: "var(--warn)", paid: "var(--good)" };
+  let steps = "", lastDated = null;
+  r.ev.forEach((e, i) => {
+    if (i > 0) {
+      if (e.d && lastDated) {
+        const sg = r.segs.find(s => s.b === e.d && s.a === lastDated.d) || { k: e.t === "paid" ? "pay" : e.t === "res" ? "fix" : "rev" };
+        const g = days(lastDated.d, e.d);
+        const txt = sg.gap ? "Revisi partner (tanggal resubmit tidak tercatat)" : STAGE[sg.k].name;
+        steps += `<li class="link"><span class="bar" style="background:${STAGE[sg.k].col};min-height:${Math.min(60, 22 + g / 3)}px"></span><span class="txt"><b>+${g} hari</b> · ${txt}</span></li>`;
+      } else {
+        steps += `<li class="link"><span class="bar" style="background:var(--line)"></span><span class="txt"></span></li>`;
+      }
     }
+    const filled = e.t === "paid" || e.t === "ret";
+    steps += `<li><span class="dot" style="border-color:${dotCol[e.t]}${filled ? ";background:" + dotCol[e.t] : ""}"></span><span class="lbl">${e.l}</span><span class="dt${e.d ? "" : " miss"}">${e.d ? fmtD(e.d) : "Belum tercatat"}</span></li>`;
+    if (e.d) lastDated = e;
   });
+  const tot = st.rev + st.fix + st.pay || 1;
   $("drawer").innerHTML = `
     <div class="dr-h">
       <div>
@@ -708,7 +910,11 @@ function openDrawer(r) {
         <div><span>BAST Value</span><b>${rp(r.value)}</b></div>
         <div><span>Invoice Number</span><b class="mono">${esc(r.invNo)}</b></div>
         <div><span>Submit → Paid</span><b>${st.total} hari</b></div>
-        <div><span>Jumlah return</span><b>${r.returns.length}×</b></div>
+        <div><span>Jumlah return</span><b>${r.cycles.length}×</b></div>
+      </div>
+      <div class="mix">
+        <div class="bar">${["rev", "fix", "pay"].filter(k => st[k] > 0).map(k => `<span style="flex:${st[k]};background:${STAGE[k].col}"></span>`).join("")}</div>
+        <div class="lg">${["rev", "fix", "pay"].map(k => `<span><i style="background:${STAGE[k].col}"></i>${STAGE[k].name} ${st[k]} h (${pct(st[k], tot)}%)</span>`).join("")}</div>
       </div>
       ${r.dummy ? `<span class="dummy">Return &amp; Resubmit dummy</span>` : ""}
       <ol class="steps">${steps}</ol>
@@ -733,11 +939,16 @@ function syncNav() {
 }
 
 function render() {
-  renderMonths(); renderHead(); renderKpis(); renderStageChart(); renderPartnerChart(); renderTable(); syncNav();
+  renderMonths(); renderHead(); renderKpis(); renderInsights(); renderStageChart(); renderPartnerChart(); renderTable(); syncNav();
 }
 
 /* ---------- events ---------- */
 document.addEventListener("click", e => {
+  if (e.target.closest("#theme")) {
+    state.dark = !state.dark; applyTheme();
+    try { localStorage.setItem("pm-theme", state.dark ? "dark" : "light"); } catch (err) {}
+    return;
+  }
   const m = e.target.closest(".mchip");
   if (m) { state.month = +m.dataset.m; try { localStorage.setItem("pm-month", state.month); } catch (err) {} render(); return; }
   const sg = e.target.closest("#seg button");
@@ -779,6 +990,7 @@ function flash(el, msg) {
   clearTimeout(flashT); flashT = setTimeout(() => tip.hidden = true, 1600);
 }
 
+applyTheme();
 render();
 </script>
 <!--BODY-END-->
