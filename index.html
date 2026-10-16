@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--PAGE-START-->
+<title>Dashboard Paid Monthly</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 16:9 app shell — dark sidebar kiri, kanan: header + pilihan bulan, KPI, ringkasan jarak, tabel paid dengan kolom timeline. */
+:root {
+  --bg: #f5f3f2;
+  --surface: #ffffff;
+  --surface-2: #faf7f6;
+  --ink: #1e1718;
+  --ink-2: #5e5355;
+  --ink-3: #887d7f;
+  --line: #e8e2e1;
+  --accent: #b3141c;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbebec;
+  --side: #231b1c;
+  --side-ink: #ebe4e4;
+  --side-ink-2: #a3989a;
+  --side-hover: #2f2526;
+  --side-active: #b3141c;
+  --s1: #2a78d6;  /* Review awal: submit -> return pertama */
+  --s2: #eb6834;  /* Return & revisi: return pertama -> resubmit */
+  --s3: #1baf7a;  /* Menuju paid: submit/resubmit terakhir -> paid */
+  --bar: #55606f;
+  --good: #1f7a3a;
+  --good-soft: #e5f2e9;
+  --shadow: 0 1px 2px rgba(35,27,28,.05), 0 6px 18px rgba(35,27,28,.04);
+  --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131011; --surface: #1c1718; --surface-2: #221c1d; --ink: #f3eded; --ink-2: #c0b5b6; --ink-3: #91868a;
+    --line: #342b2c; --accent: #e2474e; --accent-ink: #1a0f10; --accent-soft: #3a1e20;
+    --side: #0e0b0b; --side-ink: #ece5e5; --side-ink-2: #9a8f90; --side-hover: #1f1819; --side-active: #b3141c;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --bar: #8d99aa; --good: #4cc07a; --good-soft: #17301f;
+    --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131011; --surface: #1c1718; --surface-2: #221c1d; --ink: #f3eded; --ink-2: #c0b5b6; --ink-3: #91868a;
+  --line: #342b2c; --accent: #e2474e; --accent-ink: #1a0f10; --accent-soft: #3a1e20;
+  --side: #0e0b0b; --side-ink: #ece5e5; --side-ink-2: #9a8f90; --side-hover: #1f1819; --side-active: #b3141c;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --bar: #8d99aa; --good: #4cc07a; --good-soft: #17301f;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 13px/1.45 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Shell ---------- */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); height: 100%; }
+.side {
+  background: var(--side); color: var(--side-ink);
+  display: flex; flex-direction: column; gap: 6px; overflow-y: auto;
+  padding-block: 22px 18px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 8px; }
+.brand-mark { width: 36px; height: 36px; border-radius: 9px; background: var(--side-active); display: grid; place-items: center; flex: none; }
+.brand-mark svg { width: 20px; height: 20px; }
+.brand b { display: block; font: 800 16px/1.15 var(--f-display); letter-spacing: -.01em; }
+.brand span { display: block; font-size: 11.5px; color: var(--side-ink-2); margin-top: 2px; }
+.nav-label { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--side-ink-2); padding: 14px 10px 6px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav button {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 10px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--side-ink);
+  font-weight: 500; font-size: 13.5px; text-align: left; cursor: pointer; white-space: nowrap;
+}
+.nav button svg { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
+.nav button:hover { background: var(--side-hover); }
+.nav button.active { background: var(--side-active); color: #fff; font-weight: 600; }
+.nav button .count { margin-left: auto; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; background: rgba(255,255,255,.1); }
+.nav button.active .count { background: rgba(255,255,255,.22); }
+.nav button .soon { margin-left: auto; font-size: 10px; color: var(--side-ink-2); border: 1px solid rgba(255,255,255,.14); border-radius: 99px; padding: 0 7px; }
+.side-foot { margin-top: auto; padding: 14px 10px 0; font-size: 11.5px; color: var(--side-ink-2); border-top: 1px solid rgba(255,255,255,.08); }
+
+.main { overflow-y: auto; min-width: 0; }
+.main-inner {
+  display: flex; flex-direction: column; gap: 18px;
+  padding-block: 24px 32px;
+  padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px));
+  max-width: 1720px;
+}
+
+/* ---------- Header ---------- */
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 800 28px/1.15 var(--f-display); letter-spacing: -.02em; margin: 4px 0 4px; text-wrap: balance; }
+.sub { color: var(--ink-2); font-size: 13.5px; }
+.sub b { color: var(--ink); font-weight: 600; }
+.search { position: relative; }
+.search input {
+  width: 280px; max-width: 100%; height: 38px; padding: 0 12px 0 34px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--surface);
+}
+.search svg { position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; stroke: var(--ink-3); fill: none; stroke-width: 2; }
+
+.months {
+  display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 8px 10px; box-shadow: var(--shadow); overflow-x: auto;
+}
+.months .yr { font: 700 13px var(--f-display); padding: 0 8px 0 4px; color: var(--ink-2); border-right: 1px solid var(--line); margin-right: 2px; white-space: nowrap; }
+.mchips { display: grid; grid-template-columns: repeat(12, minmax(62px, 1fr)); gap: 4px; flex: 1; }
+.mchip {
+  position: relative; height: 34px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+  font-weight: 600; font-size: 13px; color: var(--ink-2);
+}
+.mchip:hover { background: var(--surface-2); color: var(--ink); }
+.mchip.has::after { content: ""; position: absolute; top: 6px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.mchip.on { background: var(--accent); color: var(--accent-ink); }
+.mchip.on::after { background: var(--accent-ink); }
+.mchip.future { color: var(--ink-3); }
+
+/* ---------- KPI ---------- */
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.kpi .k { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.kpi .k i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink-3); }
+.kpi .v { font: 800 22px/1.2 var(--f-display); letter-spacing: -.015em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .n { font-size: 12px; color: var(--ink-3); }
+.kpi .n b { color: var(--ink-2); font-weight: 600; }
+.kpi.lead { background: var(--side); color: var(--side-ink); border-color: var(--side); }
+.kpi.lead .k, .kpi.lead .n { color: var(--side-ink-2); }
+.kpi.lead .n b { color: var(--side-ink); }
+.split { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; margin-top: 4px; background: transparent; }
+.split span { display: block; height: 100%; border-radius: 3px; }
+
+/* ---------- Panels ---------- */
+.panels { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
+.card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 16px 6px; flex-wrap: wrap; }
+.card-h h2 { font: 700 15px var(--f-display); margin: 0; }
+.card-h p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.chart { padding: 4px 16px 14px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--f-body); }
+
+/* ---------- Table ---------- */
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+.toolbar h2 { font: 700 15px var(--f-display); margin: 0; }
+.toolbar p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
+.seg { display: inline-flex; max-width: 100%; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.seg button .c { color: var(--ink-3); font-weight: 500; margin-left: 4px; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
+thead th {
+  text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .03em; color: var(--ink-2);
+  background: var(--surface-2); padding: 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: bottom;
+}
+thead th.tl-h { padding-bottom: 4px; }
+thead th.hl { color: var(--ink); }
+thead th.hl::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; background: var(--hc); vertical-align: 0; }
+tbody td { padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr.row { cursor: pointer; }
+tbody tr.row:hover td { background: var(--surface-2); }
+tbody tr.row.sel td { background: var(--accent-soft); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.mono, .mono { font-family: var(--f-mono); font-size: 11.5px; }
+td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.desc { min-width: 200px; max-width: 260px; }
+td.partner { min-width: 130px; max-width: 170px; }
+td.nowrap { white-space: nowrap; }
+.no { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+tr.grp td { background: var(--surface-2); font-weight: 700; padding-block: 8px; border-bottom: 1px solid var(--line); }
+tr.grp td .gtag { display: inline-flex; align-items: center; gap: 8px; }
+tr.grp td .gtag i { width: 4px; height: 14px; border-radius: 2px; background: var(--accent); }
+tr.grp td small { font-weight: 500; color: var(--ink-3); margin-left: 8px; font-size: 12px; }
+tr.sub td { font-weight: 600; color: var(--ink-2); background: var(--surface); }
+tr.total td { font-weight: 800; font-size: 13px; background: var(--surface-2); border-bottom: 0; }
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; background: var(--good-soft); color: var(--good); white-space: nowrap; }
+.pill svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.6; }
+.dl { display: flex; flex-direction: column; gap: 2px; }
+.dl .d { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+.dl .rk { display: inline-block; min-width: 20px; font-size: 10px; font-weight: 700; color: var(--ink-3); }
+.gap { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+.gap b { color: var(--ink-2); font-weight: 700; }
+.nil { color: var(--ink-3); }
+.dummy { display: inline-block; margin-top: 3px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); border: 1px dashed var(--ink-3); border-radius: 4px; padding: 0 5px; width: max-content; }
+.tl-cap { font-size: 11px; color: var(--ink-2); margin-bottom: 2px; white-space: nowrap; }
+.tl-cap b { color: var(--ink); }
+td.tl { padding-top: 8px; }
+
+.empty { padding: 56px 24px; text-align: center; color: var(--ink-2); }
+.empty b { display: block; font: 700 16px var(--f-display); color: var(--ink); margin-bottom: 6px; }
+.note { font-size: 11.5px; color: var(--ink-3); padding: 10px 16px 14px; }
+
+/* ---------- Tooltip & drawer ---------- */
+.tip {
+  position: fixed; z-index: 50; pointer-events: none; background: var(--ink); color: var(--bg);
+  padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4; max-width: 280px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.2);
+}
+.tip b { font-weight: 700; }
+.scrim { position: fixed; inset: 0; background: rgba(20,14,15,.35); z-index: 30; }
+.drawer {
+  position: fixed; z-index: 40; top: 0; right: 0; bottom: 0; width: 440px; max-width: 100%;
+  background: var(--surface); border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,.12);
+  display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px);
+}
+.dr-h { padding: 20px 22px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
+.dr-h h3 { margin: 4px 0 6px; font: 700 16px/1.35 var(--f-display); text-wrap: balance; }
+.dr-h .meta { font-size: 12px; color: var(--ink-2); }
+.dr-x { margin-left: auto; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: none; display: grid; place-items: center; }
+.dr-x svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
+.dr-b { padding: 18px 22px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.facts div span { display: block; font-size: 11px; color: var(--ink-3); font-weight: 600; }
+.facts div b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.steps { list-style: none; margin: 0; padding: 0; }
+.steps li { display: grid; grid-template-columns: 22px 1fr auto; gap: 0 12px; }
+.steps .dot { width: 14px; height: 14px; border-radius: 50%; margin: 3px 4px 0; background: var(--surface); border: 2px solid var(--ink-3); }
+.steps .lbl { font-weight: 600; }
+.steps .dt { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-2); }
+.steps .link { grid-column: 1 / -1; display: grid; grid-template-columns: 22px 1fr; gap: 12px; }
+.steps .link .bar { width: 4px; margin: 2px auto; border-radius: 2px; min-height: 30px; }
+.steps .link .txt { font-size: 12px; color: var(--ink-2); align-self: center; padding: 6px 0; }
+.steps .link .txt b { color: var(--ink); }
+
+@media (max-width: 1280px) {
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .panels { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 960px) {
+  html, body { height: auto; }
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .side { padding-block: 14px 10px; padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 4px; }
+  .brand { border: 0; padding-bottom: 6px; margin: 0; }
+  .nav-label, .side-foot { display: none; }
+  .nav-scroll { display: flex; overflow-x: auto; gap: 2px; }
+  .nav { flex-direction: row; }
+  .nav button { width: auto; }
+  .nav button .soon { display: none; }
+  .main { overflow: visible; }
+  .main-inner { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi.lead { grid-column: 1 / -1; }
+  h1 { font-size: 22px; }
+  .search, .search input { width: 100%; }
+  .head > div { min-width: 0; }
+  .toolbar > div { min-width: 0; }
+  .chart { overflow-x: auto; }
+  .chart svg { min-width: 520px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .drawer { transition: transform .2s ease; }
+}
+</style>
+<!--HEAD-END-->
+</head>
+<body>
+<!--BODY-START-->
+<div class="app">
+  <aside class="side" aria-label="Navigasi">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18V9M12 18V5M18 18v-6"/></svg>
+      </div>
+      <div><b>Paid Monitor</b><span>Invoice Outbound &amp; Inbound</span></div>
+    </div>
+    <div class="nav-scroll">
+      <div class="nav-label">Monitoring</div>
+      <nav class="nav" id="nav-main">
+        <button data-nav="all" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard Paid</button>
+        <button data-nav="ret"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Return &amp; Resubmit<span class="count" id="cnt-ret">0</span></button>
+      </nav>
+      <div class="nav-label">Invoice</div>
+      <nav class="nav">
+        <button data-nav="Outbound"><svg viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>Paid Outbound<span class="count" id="cnt-out">0</span></button>
+        <button data-nav="Inbound"><svg viewBox="0 0 24 24"><path d="M17 7 7 17"/><path d="M16 17H7V8"/></svg>Paid Inbound<span class="count" id="cnt-in">0</span></button>
+        <button data-soon="Aging Invoice"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Aging Invoice<span class="soon">Segera</span></button>
+      </nav>
+      <div class="nav-label">Master Data</div>
+      <nav class="nav">
+        <button data-soon="Partner / Mitra"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14c2 .8 3 2.8 3 6"/></svg>Partner / Mitra<span class="soon">Segera</span></button>
+        <button data-soon="Laporan Bulanan"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Laporan Bulanan<span class="soon">Segera</span></button>
+        <button data-soon="Pengaturan"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Pengaturan<span class="soon">Segera</span></button>
+      </nav>
+    </div>
+    <div class="side-foot">Sumber: Report Status Invoice Paid &amp; Database Project Outbound. Update 16-Okt-26.</div>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="main-inner">
+      <header class="head">
+        <div>
+          <div class="eyebrow">Report Status Invoice Paid</div>
+          <h1>Dashboard Paid Monthly Outbound &amp; Inbound</h1>
+          <div class="sub" id="sub"></div>
+        </div>
+        <label class="search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Cari partner, deskripsi, no. invoice" aria-label="Cari invoice">
+        </label>
+      </header>
+
+      <div class="months" role="tablist" aria-label="Pilih bulan">
+        <span class="yr">2026</span>
+        <div class="mchips" id="months"></div>
+      </div>
+
+      <section class="kpis" id="kpis"></section>
+
+      <section class="panels" id="panels">
+        <div class="card">
+          <div class="card-h">
+            <div><h2>Rata-rata jarak per tahap</h2><p>Hari kalender dari Submit Invoice sampai Paid</p></div>
+            <div class="legend">
+              <span><i style="background:var(--s1)"></i>Review awal</span>
+              <span><i style="background:var(--s2)"></i>Return &amp; revisi</span>
+              <span><i style="background:var(--s3)"></i>Menuju paid</span>
+            </div>
+          </div>
+          <div class="chart" id="chart-stage"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div><h2>Nilai paid per partner</h2><p>BAST Value, bulan terpilih</p></div></div>
+          <div class="chart" id="chart-partner"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <div><h2 id="tbl-title">Invoice Paid</h2><p>Klik baris untuk melihat timeline lengkap. Jarak dihitung dalam hari kalender.</p></div>
+          <div class="seg" id="seg" role="tablist" aria-label="Jenis invoice"></div>
+        </div>
+        <div id="tbl"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Detail invoice"></aside>
+
+<script>
+/* =====================================================================
+   DATA — tambah baris baru di sini. Bulan dashboard ditentukan dari "paid".
+   Format tanggal: YYYY-MM-DD. returns = daftar Return Date (boleh kosong).
+   dummy: true = Return/Resubmit masih data contoh.
+   ===================================================================== */
+const DATA = [
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan 2 x PDU Rack Standard Local Brand Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-05-11", value: 19000000, invNo: "128/VMP-INV/FA/V/2026", submit: "2026-02-12", status: "Paid", returns: ["2026-06-08", "2026-07-10", "2026-08-11"], resubmit: "2026-09-17", paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte MMR B To Rack NPCT1 SH Room L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1400000, invNo: "196/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Telkom MMRA GF to Bukopin GF Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1700000, invNo: "194/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-07-23", "2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte To Sigma Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1800000, invNo: "197/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-09-04"], resubmit: "2026-09-17", paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XL MMR A L2 To Cage Jalin L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 2700000, invNo: "193/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid", returns: ["2026-08-05", "2026-08-11"], resubmit: "2026-09-15", paid: "2026-09-24" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan Project XC Telkom To OJK Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1800000, invNo: "199/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid", returns: ["2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-25" },
+  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Lintas To MNC Data Center DC Sentul", partner: "PT Visi Maine Perkasa", invDate: "2026-07-03", value: 1600000, invNo: "200/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid", returns: ["2026-08-05"], resubmit: "2026-09-15", paid: "2026-09-25" },
+  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Pengadaan Barang dan Jasa Dedicated Colocation Space 4 Rack DC Sentul", partner: "PT DKSH Market Expansion", invDate: "2026-05-11", value: 380000000, invNo: "4200026008", submit: "2026-05-21", status: "Paid", returns: ["2026-05-26", "2026-08-06"], resubmit: "2026-09-28", paid: "2026-09-28" },
+  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Working Room L1 DC STL", partner: "PT Gemilang Semesta Utama", invDate: "2026-07-15", value: 161530000, invNo: "021/NV-GMT/VII/2026", submit: "2026-07-30", status: "Paid", returns: [], resubmit: null, paid: "2026-09-29" },
+  { seg: "Inbound", type: "Project Delta", scope: "CX Consultant", desc: "Termin ke-1 (Sep 2025 - Maret 2026) Cx Consultant", partner: "Commtech (Asia) Limited", invDate: "2026-07-02", value: 3024040000, invNo: "CMIDO2607056", submit: "2026-07-13", status: "Paid", returns: ["2026-07-24"], resubmit: "2026-08-05", paid: "2026-09-15", dummy: true },
+  { seg: "Inbound", type: "Project Delta", scope: "General Contractor", desc: "General Contractor MATERIALS For Project Delta Level 3 And 4 Fit Out Work - Main Long Lead Equipment Arrival on Site - LLEC 9", partner: "PT Huawei Tech Investment", invDate: "2026-03-30", value: 2157840000, invNo: "PT2609125", submit: "2026-05-21", status: "Paid", returns: ["2026-06-05", "2026-07-14"], resubmit: "2026-08-25", paid: "2026-09-28", dummy: true },
+];
+
+const YEAR = 2026;
+const TODAY = "2026-10-16";
+const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+const MSH = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+
+const state = { month: 8, seg: "all", onlyRet: false, q: "", sel: null };
+try { const m = +localStorage.getItem("pm-month"); if (m >= 0 && m < 12 && localStorage.getItem("pm-month") !== null) state.month = m; } catch (e) {}
+
+/* ---------- helpers ---------- */
+const D = s => new Date(s + "T00:00:00");
+const days = (a, b) => Math.round((D(b) - D(a)) / 864e5);
+const fmtD = s => { const d = D(s); return String(d.getDate()).padStart(2, "0") + "-" + MSH[d.getMonth()] + "-" + String(d.getFullYear()).slice(2); };
+const rp = n => "Rp" + Math.round(n).toLocaleString("id-ID");
+const rpShort = n => n >= 1e9 ? "Rp" + (n / 1e9).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " M"
+  : n >= 1e6 ? "Rp" + (n / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + " jt" : rp(n);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
+const avg = (a, f) => a.length ? sum(a, f) / a.length : 0;
+const $ = id => document.getElementById(id);
+
+/* Tahap: s1 submit→return pertama, s2 return pertama→resubmit, s3 (re)submit terakhir→paid */
+function stages(r) {
+  const last = r.resubmit || (r.returns.length ? r.returns[r.returns.length - 1] : r.submit);
+  if (!r.returns.length) return { s1: 0, s2: 0, s3: days(r.submit, r.paid), total: days(r.submit, r.paid), from3: r.submit };
+  return {
+    s1: days(r.submit, r.returns[0]),
+    s2: days(r.returns[0], last),
+    s3: days(last, r.paid),
+    total: days(r.submit, r.paid),
+    from3: last
+  };
+}
+DATA.forEach(r => r.st = stages(r));
+
+const inMonth = (r, m) => { const d = D(r.paid); return d.getFullYear() === YEAR && d.getMonth() === m; };
+const monthRows = m => DATA.filter(r => inMonth(r, m));
+const segRows = rows => state.seg === "all" ? rows : rows.filter(r => r.seg === state.seg);
+const viewRows = () => {
+  let rows = segRows(monthRows(state.month));
+  if (state.onlyRet) rows = rows.filter(r => r.returns.length);
+  const q = state.q.trim().toLowerCase();
+  if (q) rows = rows.filter(r => (r.desc + " " + r.partner + " " + r.invNo + " " + r.scope).toLowerCase().includes(q));
+  return rows;
+};
+const lastDay = m => new Date(YEAR, m + 1, 0).getDate();
+
+/* ---------- months ---------- */
+function renderMonths() {
+  const today = D(TODAY);
+  $("months").innerHTML = MONTHS.map((n, i) => {
+    const has = monthRows(i).length > 0;
+    const future = new Date(YEAR, i, 1) > today;
+    return `<button class="mchip${i === state.month ? " on" : ""}${has ? " has" : ""}${future ? " future" : ""}" role="tab" aria-selected="${i === state.month}" data-m="${i}" data-tip="${esc(n + " " + YEAR + (has ? " · " + monthRows(i).length + " invoice paid" : future ? " · periode belum berjalan" : " · belum ada data"))}">${MSH[i]}</button>`;
+  }).join("");
+}
+
+/* ---------- header + KPI ---------- */
+function renderHead() {
+  const m = state.month;
+  $("sub").innerHTML = `Paid <b>${MONTHS[m]} ${YEAR}</b> · Period cut off <b>${lastDay(m)} ${MONTHS[m]} ${YEAR}</b>`;
+  const all = monthRows(m);
+  $("cnt-out").textContent = all.filter(r => r.seg === "Outbound").length;
+  $("cnt-in").textContent = all.filter(r => r.seg === "Inbound").length;
+  $("cnt-ret").textContent = all.filter(r => r.returns.length).length;
+}
+
+function renderKpis() {
+  const all = monthRows(state.month);
+  const rows = segRows(all);
+  const out = all.filter(r => r.seg === "Outbound"), inn = all.filter(r => r.seg === "Inbound");
+  const tot = sum(all, r => r.value), vo = sum(out, r => r.value), vi = sum(inn, r => r.value);
+  const ret = rows.filter(r => r.returns.length);
+  const lead = rows.length ? Math.round(avg(rows, r => r.st.total)) : null;
+  const longest = rows.slice().sort((a, b) => b.st.total - a.st.total)[0];
+  const fastest = rows.slice().sort((a, b) => a.st.total - b.st.total)[0];
+  const pctO = tot ? vo / tot * 100 : 0;
+  $("kpis").innerHTML = `
+    <div class="kpi lead">
+      <div class="k">Total Paid · ${MONTHS[state.month]}</div>
+      <div class="v">${rp(tot)}</div>
+      <div class="n"><b>${all.length}</b> invoice paid</div>
+    </div>
+    <div class="kpi">
+      <div class="k">Paid Outbound</div>
+      <div class="v">${rp(vo)}</div>
+      <div class="n"><b>${out.length}</b> invoice · ${tot ? pctO.toLocaleString("id-ID", { maximumFractionDigits: 1 }) : 0}% nilai</div>
+    </div>
+    <div class="kpi">
+      <div class="k">Paid Inbound</div>
+      <div class="v">${rp(vi)}</div>
+      <div class="n"><b>${inn.length}</b> invoice · ${tot ? (100 - pctO).toLocaleString("id-ID", { maximumFractionDigits: 1 }) : 0}% nilai</div>
+    </div>
+    <div class="kpi">
+      <div class="k"><i style="background:var(--s2)"></i>Sempat di-return</div>
+      <div class="v">${rows.length ? ret.length + " / " + rows.length : "–"}</div>
+      <div class="n">${rows.length ? `<b>${sum(rows, r => r.returns.length)}</b> kali return total` : "Tidak ada invoice"}</div>
+    </div>
+    <div class="kpi">
+      <div class="k">Rata-rata Submit → Paid</div>
+      <div class="v">${lead === null ? "–" : lead + " hari"}</div>
+      <div class="n">${rows.length ? `Tercepat <b>${fastest.st.total} h</b> · terlama <b>${longest.st.total} h</b>` : "Tidak ada invoice"}</div>
+    </div>`;
+}
+
+/* ---------- charts ---------- */
+function renderStageChart() {
+  const all = monthRows(state.month);
+  const groups = ["Outbound", "Inbound"].filter(g => state.seg === "all" || state.seg === g)
+    .map(g => ({ g, rows: all.filter(r => r.seg === g) })).filter(x => x.rows.length);
+  if (!groups.length) { $("chart-stage").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; return; }
+  groups.forEach(x => {
+    x.a = ["s1", "s2", "s3"].map(k => avg(x.rows, r => r.st[k]));
+    x.t = avg(x.rows, r => r.st.total);
+    x.dummy = x.rows.some(r => r.dummy);
+  });
+  const W = 640, L = 108, R = 52, rowH = 56, top = 22;
+  const max = Math.max(...groups.map(x => x.t));
+  const step = max > 150 ? 30 : max > 60 ? 15 : 7;
+  const dmax = Math.ceil(max / step) * step || step;
+  const x = v => L + v / dmax * (W - L - R);
+  const H = top + groups.length * rowH + 4;
+  const cols = ["var(--s1)", "var(--s2)", "var(--s3)"], names = ["Review awal", "Return & revisi", "Menuju paid"];
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rata-rata jarak per tahap">`;
+  for (let v = 0; v <= dmax; v += step) {
+    s += `<line x1="${x(v)}" x2="${x(v)}" y1="${top - 6}" y2="${H - 4}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text x="${x(v)}" y="${top - 10}" text-anchor="middle" font-size="10.5" fill="var(--ink-3)">${v}${v === dmax ? " h" : ""}</text>`;
+  }
+  groups.forEach((gx, i) => {
+    const y = top + i * rowH + 6;
+    s += `<text x="0" y="${y + 13}" font-size="12.5" font-weight="700" fill="var(--ink)">${gx.g}</text>`;
+    s += `<text x="0" y="${y + 29}" font-size="11" fill="var(--ink-3)">${gx.rows.length} invoice${gx.dummy ? " · dummy" : ""}</text>`;
+    let acc = 0;
+    gx.a.forEach((v, k) => {
+      if (v <= 0) return;
+      const x0 = x(acc) + (acc > 0 ? 1 : 0), x1 = x(acc + v) - 1;
+      const tip = `<b>${gx.g} · ${names[k]}</b><br>Rata-rata ${Math.round(v)} hari`;
+      s += `<rect x="${x0}" y="${y}" width="${Math.max(2, x1 - x0)}" height="18" rx="4" fill="${cols[k]}" data-tip="${esc(tip)}"/>`;
+      acc += v;
+    });
+    s += `<text x="${x(acc) + 8}" y="${y + 13}" font-size="12.5" font-weight="700" fill="var(--ink)">${Math.round(gx.t)} h</text>`;
+    let tx = L;
+    const parts = gx.a.map((v, k) => ({ v, k }));
+    parts.forEach(p => {
+      s += `<rect x="${tx}" y="${y + 26}" width="8" height="8" rx="2" fill="${cols[p.k]}"/>`;
+      const label = `${names[p.k]} ${Math.round(p.v)} h`;
+      s += `<text x="${tx + 12}" y="${y + 33.5}" font-size="11" fill="var(--ink-2)">${label}</text>`;
+      tx += 12 + label.length * 6.1 + 16;
+    });
+  });
+  $("chart-stage").innerHTML = s + "</svg>";
+}
+
+function renderPartnerChart() {
+  const rows = segRows(monthRows(state.month));
+  const map = {};
+  rows.forEach(r => { (map[r.partner] = map[r.partner] || { v: 0, n: 0, seg: r.seg }); map[r.partner].v += r.value; map[r.partner].n++; });
+  const items = Object.entries(map).map(([p, o]) => ({ p, ...o })).sort((a, b) => b.v - a.v);
+  if (!items.length) { $("chart-partner").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; return; }
+  const W = 520, L = 176, R = 78, bh = 14, gap = 12, top = 4;
+  const max = Math.max(...items.map(i => i.v));
+  const x = v => v / max * (W - L - R);
+  const H = top + items.length * (bh + gap);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Nilai paid per partner">`;
+  items.forEach((it, i) => {
+    const y = top + i * (bh + gap);
+    const name = it.p.length > 27 ? it.p.slice(0, 26) + "…" : it.p;
+    const tip = `<b>${esc(it.p)}</b><br>${it.seg} · ${it.n} invoice<br>${rp(it.v)}`;
+    s += `<text x="0" y="${y + 11}" font-size="11.5" fill="var(--ink-2)">${esc(name)}</text>`;
+    s += `<rect x="${L}" y="${y - 4}" width="${W - L}" height="${bh + 8}" fill="transparent" data-tip="${esc(tip)}"/>`;
+    s += `<rect x="${L}" y="${y}" width="${Math.max(3, x(it.v))}" height="${bh}" rx="4" fill="var(--bar)" pointer-events="none"/>`;
+    s += `<text x="${L + Math.max(3, x(it.v)) + 6}" y="${y + 11}" font-size="11.5" font-weight="700" fill="var(--ink)" pointer-events="none">${rpShort(it.v)}</text>`;
+  });
+  $("chart-partner").innerHTML = s + "</svg>";
+}
+
+/* ---------- table ---------- */
+const TLW = 280;
+function domainFor(rows) {
+  if (!rows.length) return null;
+  const min = rows.map(r => D(r.submit)).reduce((a, b) => a < b ? a : b);
+  const max = rows.map(r => D(r.paid)).reduce((a, b) => a > b ? a : b);
+  const a = new Date(min.getFullYear(), min.getMonth(), 1);
+  const b = new Date(max.getFullYear(), max.getMonth() + 1, 1);
+  return { a, b, x: d => 8 + (D(d) - a) / (b - a) * (TLW - 16) };
+}
+
+function tlHeader(dom) {
+  let s = `<svg width="${TLW}" height="16" viewBox="0 0 ${TLW} 16" aria-hidden="true">`;
+  const months = [];
+  for (let d = new Date(dom.a); d < dom.b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) months.push(new Date(d));
+  const every = months.length > 10 ? 2 : 1;
+  months.forEach((d, i) => {
+    const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
+    const xx = dom.x(iso);
+    s += `<line x1="${xx}" x2="${xx}" y1="10" y2="16" stroke="var(--ink-3)" stroke-width="1"/>`;
+    if (i % every === 0) s += `<text x="${xx + 3}" y="9" font-size="10" font-weight="600" fill="var(--ink-2)">${MSH[d.getMonth()]}</text>`;
+  });
+  return s + "</svg>";
+}
+
+function tlRow(r, dom) {
+  const x = dom.x, y = 12, st = r.st;
+  let s = `<svg width="${TLW}" height="24" viewBox="0 0 ${TLW} 24" role="img" aria-label="Timeline ${esc(r.invNo)}">`;
+  // month gridlines
+  for (let d = new Date(dom.a); d <= dom.b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
+    s += `<line x1="${x(iso)}" x2="${x(iso)}" y1="2" y2="22" stroke="var(--line)" stroke-width="1"/>`;
+  }
+  const seg = (a, b, col, label) => {
+    const x0 = x(a) + 1, x1 = x(b) - 1;
+    const tip = `<b>${label}</b><br>${fmtD(a)} → ${fmtD(b)}<br>${days(a, b)} hari`;
+    s += `<rect x="${x0}" y="${y - 3}" width="${Math.max(2, x1 - x0)}" height="6" rx="3" fill="${col}"/>`;
+    s += `<rect x="${x(a)}" y="0" width="${Math.max(6, x(b) - x(a))}" height="24" fill="transparent" data-tip="${esc(tip)}"/>`;
+  };
+  if (r.returns.length) {
+    seg(r.submit, r.returns[0], "var(--s1)", "Review awal");
+    seg(r.returns[0], st.from3, "var(--s2)", "Return & revisi");
+  }
+  if (days(st.from3, r.paid) > 0) seg(st.from3, r.paid, "var(--s3)", "Menuju paid");
+  const dot = (d, fill, stroke, label, rr = 4) => {
+    s += `<circle cx="${x(d)}" cy="${y}" r="${rr}" fill="${fill}" stroke="${stroke}" stroke-width="2" data-tip="${esc(`<b>${label}</b><br>${fmtD(d)}`)}"/>`;
+  };
+  dot(r.submit, "var(--surface)", "var(--ink-2)", "Submit Invoice");
+  r.returns.forEach((d, i) => dot(d, "var(--s2)", "var(--surface)", "Return " + (r.returns.length > 1 ? i + 1 : "")));
+  if (r.resubmit) dot(r.resubmit, "var(--surface)", "var(--s3)", "Resubmit");
+  dot(r.paid, "var(--good)", "var(--surface)", "Paid", 5);
+  return s + "</svg>";
+}
+
+function rowHtml(r, i, dom) {
+  const st = r.st;
+  const dm = r.dummy ? `<span class="dummy">Dummy</span>` : "";
+  const ret = r.returns.length
+    ? `<div class="dl">${r.returns.map((d, k) => `<span class="d">${r.returns.length > 1 ? `<span class="rk">R${k + 1}</span>` : ""}${fmtD(d)}</span>`).join("")}<span class="gap"><b>+${st.s1} h</b> dari submit</span>${dm}</div>`
+    : `<span class="nil">Tidak ada</span>`;
+  const lastRet = r.returns[r.returns.length - 1];
+  const res = r.resubmit
+    ? `<div class="dl"><span class="d">${fmtD(r.resubmit)}</span><span class="gap"><b>+${days(lastRet || r.submit, r.resubmit)} h</b> dari return${r.returns.length > 1 ? " ke-" + r.returns.length : ""}</span>${dm}</div>`
+    : `<span class="nil">Tidak ada</span>`;
+  const paid = `<div class="dl"><span class="d">${fmtD(r.paid)}</span><span class="gap"><b>+${st.s3} h</b> dari ${r.resubmit ? "resubmit" : r.returns.length ? "return" : "submit"}</span></div>`;
+  return `<tr class="row${state.sel === r ? " sel" : ""}" tabindex="0" data-i="${DATA.indexOf(r)}">
+    <td class="no">${i + 1}</td>
+    <td class="nowrap">${esc(r.type)}</td>
+    <td class="nowrap">${esc(r.scope)}</td>
+    <td class="desc">${esc(r.desc)}</td>
+    <td class="partner">${esc(r.partner)}</td>
+    <td class="date">${fmtD(r.invDate)}</td>
+    <td class="num nowrap">${rp(r.value)}</td>
+    <td class="mono nowrap">${esc(r.invNo)}</td>
+    <td class="date">${fmtD(r.submit)}</td>
+    <td><span class="pill"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>${esc(r.status)}</span></td>
+    <td>${ret}</td>
+    <td>${res}</td>
+    <td>${paid}</td>
+    <td class="tl"><div class="tl-cap"><b>${st.total} hari</b> submit → paid${r.returns.length ? ` · ${r.returns.length}× return` : ""}</div>${tlRow(r, dom)}</td>
+  </tr>`;
+}
+
+function renderTable() {
+  const all = monthRows(state.month);
+  const segs = [["all", "Semua"], ["Outbound", "Outbound"], ["Inbound", "Inbound"]];
+  $("seg").innerHTML = segs.map(([k, n]) => {
+    const c = k === "all" ? all.length : all.filter(r => r.seg === k).length;
+    return `<button role="tab" aria-selected="${state.seg === k}" class="${state.seg === k ? "on" : ""}" data-seg="${k}">${n}<span class="c">${c}</span></button>`;
+  }).join("") + `<button role="tab" aria-selected="${state.onlyRet}" class="${state.onlyRet ? "on" : ""}" data-ret="1">Hanya yang di-return</button>`;
+  $("tbl-title").textContent = `Invoice Paid ${MONTHS[state.month]} ${YEAR}`;
+
+  const rows = viewRows();
+  if (!all.length) {
+    const future = new Date(YEAR, state.month, 1) > D(TODAY);
+    $("tbl").innerHTML = `<div class="empty"><b>${future ? "Periode belum berjalan" : "Belum ada data paid"}</b>${future ? `Bulan ${MONTHS[state.month]} ${YEAR} belum dimulai.` : `Tambahkan invoice dengan Paid Date di ${MONTHS[state.month]} ${YEAR} ke tabel DATA untuk menampilkannya di sini.`}</div>`;
+    return;
+  }
+  if (!rows.length) { $("tbl").innerHTML = `<div class="empty"><b>Tidak ada yang cocok</b>Ubah kata kunci pencarian atau filter.</div>`; return; }
+  const dom = domainFor(rows);
+  let h = `<div class="tbl-wrap"><table><thead><tr>
+    <th>No</th><th>Type of Work</th><th>Scope of Work</th><th>Description</th><th>Partner</th><th>Invoice Date</th>
+    <th class="num">BAST Value</th><th>Invoice Number</th><th>Submit Invoice Date</th><th>Invoice Status</th>
+    <th class="hl" style="--hc:var(--s2)">Return Date</th><th class="hl" style="--hc:var(--s3)">Resubmit Date</th><th class="hl" style="--hc:var(--good)">Paid Date</th>
+    <th class="tl-h">Timeline Submit → Paid<br>${tlHeader(dom)}</th>
+  </tr></thead><tbody>`;
+  ["Outbound", "Inbound"].forEach(g => {
+    const gr = rows.filter(r => r.seg === g);
+    if (!gr.length) return;
+    h += `<tr class="grp"><td colspan="14"><span class="gtag"><i></i>Paid ${g}</span><small>${gr.length} invoice${gr.some(r => r.dummy) ? " · Return &amp; Resubmit masih dummy" : ""}</small></td></tr>`;
+    gr.forEach((r, i) => h += rowHtml(r, i, dom));
+    h += `<tr class="sub"><td colspan="6">Subtotal ${g}</td><td class="num nowrap">${rp(sum(gr, r => r.value))}</td><td colspan="7"></td></tr>`;
+  });
+  h += `<tr class="total"><td colspan="6">Total</td><td class="num nowrap">${rp(sum(rows, r => r.value))}</td><td colspan="7"></td></tr>`;
+  h += `</tbody></table></div><div class="note">Return Date dan Resubmit Date invoice Inbound masih dummy, menunggu data dari tim. “h” = hari kalender.</div>`;
+  $("tbl").innerHTML = h;
+}
+
+/* ---------- drawer ---------- */
+function openDrawer(r) {
+  state.sel = r;
+  const st = r.st;
+  const ev = [{ l: "Invoice Date", d: r.invDate, c: "var(--ink-3)" }, { l: "Submit Invoice", d: r.submit, c: "var(--ink-2)" }];
+  r.returns.forEach((d, i) => ev.push({ l: "Return" + (r.returns.length > 1 ? " ke-" + (i + 1) : ""), d, c: "var(--s2)" }));
+  if (r.resubmit) ev.push({ l: "Resubmit", d: r.resubmit, c: "var(--s3)" });
+  ev.push({ l: "Paid", d: r.paid, c: "var(--good)" });
+  const linkCol = (a, b) => b.l.startsWith("Return") && a.l === "Submit Invoice" ? "var(--s1)"
+    : a.l.startsWith("Return") ? "var(--s2)" : b.l === "Paid" ? "var(--s3)" : "var(--line)";
+  const linkTxt = (a, b) => b.l.startsWith("Return") && a.l === "Submit Invoice" ? "Review awal"
+    : a.l.startsWith("Return") && b.l.startsWith("Return") ? "Revisi, lalu di-return lagi"
+    : a.l.startsWith("Return") && b.l === "Resubmit" ? "Revisi oleh partner"
+    : b.l === "Paid" ? "Menuju paid" : "Invoice dibuat → disubmit";
+  let steps = "";
+  ev.forEach((e, i) => {
+    steps += `<li><span class="dot" style="border-color:${e.c}${e.l === "Paid" ? ";background:" + e.c : ""}"></span><span class="lbl">${e.l}</span><span class="dt">${fmtD(e.d)}</span></li>`;
+    if (i < ev.length - 1) {
+      const n = ev[i + 1], g = days(e.d, n.d);
+      steps += `<li class="link"><span class="bar" style="background:${linkCol(e, n)};min-height:${Math.min(64, 24 + Math.abs(g) / 3)}px"></span><span class="txt"><b>${g >= 0 ? "+" : ""}${g} hari</b> · ${linkTxt(e, n)}</span></li>`;
+    }
+  });
+  $("drawer").innerHTML = `
+    <div class="dr-h">
+      <div>
+        <div class="eyebrow">${esc(r.seg)} · ${esc(r.scope)}</div>
+        <h3>${esc(r.desc)}</h3>
+        <div class="meta">${esc(r.partner)}</div>
+      </div>
+      <button class="dr-x" id="dr-x" aria-label="Tutup detail"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="dr-b">
+      <div class="facts">
+        <div><span>BAST Value</span><b>${rp(r.value)}</b></div>
+        <div><span>Invoice Number</span><b class="mono">${esc(r.invNo)}</b></div>
+        <div><span>Submit → Paid</span><b>${st.total} hari</b></div>
+        <div><span>Jumlah return</span><b>${r.returns.length}×</b></div>
+      </div>
+      ${r.dummy ? `<span class="dummy">Return &amp; Resubmit dummy</span>` : ""}
+      <ol class="steps">${steps}</ol>
+    </div>`;
+  $("drawer").hidden = false; $("scrim").hidden = false;
+  $("dr-x").focus();
+  renderTable();
+}
+function closeDrawer() {
+  $("drawer").hidden = true; $("scrim").hidden = true;
+  const sel = state.sel; state.sel = null; renderTable();
+  if (sel) { const tr = document.querySelector(`tr.row[data-i="${DATA.indexOf(sel)}"]`); tr && tr.focus(); }
+}
+
+/* ---------- nav ---------- */
+function syncNav() {
+  document.querySelectorAll(".nav button[data-nav]").forEach(b => {
+    const k = b.dataset.nav;
+    const on = k === "ret" ? state.onlyRet && state.seg === "all" : !state.onlyRet && state.seg === k;
+    b.classList.toggle("active", on);
+  });
+}
+
+function render() {
+  renderMonths(); renderHead(); renderKpis(); renderStageChart(); renderPartnerChart(); renderTable(); syncNav();
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const m = e.target.closest(".mchip");
+  if (m) { state.month = +m.dataset.m; try { localStorage.setItem("pm-month", state.month); } catch (err) {} render(); return; }
+  const sg = e.target.closest("#seg button");
+  if (sg) { if (sg.dataset.ret) state.onlyRet = !state.onlyRet; else state.seg = sg.dataset.seg; render(); return; }
+  const nv = e.target.closest(".nav button");
+  if (nv) {
+    if (nv.dataset.soon) { flash(nv, nv.dataset.soon + " belum tersedia di versi ini"); return; }
+    const k = nv.dataset.nav;
+    if (k === "ret") { state.seg = "all"; state.onlyRet = true; } else { state.seg = k; state.onlyRet = false; }
+    render(); $("main").scrollTo({ top: 0 }); return;
+  }
+  const tr = e.target.closest("tr.row");
+  if (tr) { openDrawer(DATA[+tr.dataset.i]); return; }
+  if (e.target.closest("#dr-x") || e.target.id === "scrim") closeDrawer();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("drawer").hidden) closeDrawer();
+  if (e.key === "Enter" && e.target.matches("tr.row")) openDrawer(DATA[+e.target.dataset.i]);
+});
+$("q").addEventListener("input", e => { state.q = e.target.value; renderTable(); });
+
+const tip = $("tip");
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (!t) { tip.hidden = true; return; }
+  tip.innerHTML = t.getAttribute("data-tip");
+  tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+let flashT;
+function flash(el, msg) {
+  const r = el.getBoundingClientRect();
+  tip.textContent = msg; tip.hidden = false;
+  tip.style.left = Math.min(r.right + 8, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = r.top + 6 + "px";
+  clearTimeout(flashT); flashT = setTimeout(() => tip.hidden = true, 1600);
+}
+
+render();
+</script>
+<!--BODY-END-->
+</body>
+</html>
