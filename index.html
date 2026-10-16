@@ -169,8 +169,14 @@ h1 { font: 800 28px/1.15 var(--f-display); letter-spacing: -.02em; margin: 4px 0
 .ins .ic.warn { color: var(--warn); background: var(--warn-soft); }
 .ins .tag { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
 .ins h3 { margin: 2px 0 4px; font: 700 14.5px/1.35 var(--f-display); text-wrap: balance; }
-.ins p { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 62ch; }
-.ins p b { color: var(--ink); font-weight: 600; }
+.ins .p { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 62ch; }
+.ins .p b { color: var(--ink); font-weight: 600; }
+.ins .p ul { margin: 4px 0 6px; padding: 0 0 0 16px; display: flex; flex-direction: column; gap: 3px; }
+.ins .p ul li::marker { color: var(--ink-3); }
+.ins .p .sub-h { display: block; margin-top: 2px; }
+.ins .p .stgs { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 2px; }
+.ins .p .stg { white-space: nowrap; }
+.ins .p .sq { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: 0; }
 .ins-foot { font-size: 11.5px; color: var(--ink-3); padding: 10px 16px 12px; }
 
 /* ---------- Panels ---------- */
@@ -482,7 +488,6 @@ const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
 const avg = (a, f) => a.length ? sum(a, f) / a.length : 0;
-const short = s => s.length > 34 ? s.slice(0, 33).trim() + "…" : s;
 const $ = id => document.getElementById(id);
 
 /* Bangun urutan kejadian + segmen tahap untuk satu invoice.
@@ -632,35 +637,45 @@ function renderInsights() {
       p: `${rpShort(ps[0][1])} dari total <b>${rpShort(tot)}</b> (${rows.length} invoice, ${ps.length} partner).` });
   }
 
-  // 2. Return
+  // 2. Return — dipisah per Outbound / Inbound
+  const groups = ["Outbound", "Inbound"].map(g => ({ g, rows: rows.filter(r => r.seg === g) })).filter(x => x.rows.length);
+  const gName = x => `<b>${x.g}</b>${x.rows.some(r => r.dummy) ? " (dummy)" : ""}`;
   const retRows = rows.filter(r => r.cycles.length);
   const totRet = sum(rows, r => r.cycles.length);
   const maxC = Math.max(...rows.map(r => r.cycles.length));
   const most = rows.filter(r => r.cycles.length === maxC && maxC > 0);
   items.push({ ic: "ret", c: "orange", tag: "Return",
-    h: retRows.length === rows.length ? `Semua invoice sempat di-return, total ${totRet} kali` : `${retRows.length} dari ${rows.length} invoice sempat di-return`,
-    p: maxC > 0 ? `Paling sering ${maxC}×: <b>${most.map(r => esc(short(r.desc))).join("</b> dan <b>")}</b>.` : "Tidak ada invoice yang di-return bulan ini." });
+    h: retRows.length === rows.length ? `Semua invoice sempat di-return, total ${totRet} kali` : `${retRows.length} dari ${rows.length} invoice sempat di-return, total ${totRet} kali`,
+    p: `<ul>${groups.map(x => {
+          const n = x.rows.filter(r => r.cycles.length).length;
+          return `<li>${gName(x)}: <b>${sum(x.rows, r => r.cycles.length)} kali</b> return, ${n === x.rows.length ? "semua" : n + " dari"} ${x.rows.length} invoice di-return</li>`;
+        }).join("")}</ul>` +
+      (maxC > 0 ? `<span class="sub-h">Paling sering di-return (${maxC}× per invoice):</span><ul>${most.map(r => `<li><b>${esc(r.desc)}</b> · ${esc(r.partner)}</li>`).join("")}</ul>` : "") });
 
-  // 3. Tahap terlama
-  const a = { rev: avg(rows, r => r.st.rev), fix: avg(rows, r => r.st.fix), pay: avg(rows, r => r.st.pay) };
-  const tAvg = a.rev + a.fix + a.pay;
-  const top = Object.keys(a).sort((x, y) => a[y] - a[x])[0];
-  const others = Object.keys(a).filter(k => k !== top);
-  items.push({ ic: "clock", c: top === "rev" ? "blue" : top === "fix" ? "orange" : "aqua", tag: "Waktu",
-    h: `Waktu terbanyak habis di ${STAGE[top].name.toLowerCase()}`,
-    p: `Rata-rata <b>${Math.round(a[top])} hari</b> per invoice (${pct(a[top], tAvg)}% dari total), dibanding ${STAGE[others[0]].name.toLowerCase()} ${Math.round(a[others[0]])} hari dan ${STAGE[others[1]].name.toLowerCase()} ${Math.round(a[others[1]])} hari.` });
+  // 3. Tahap terlama — rata-rata hari per invoice, per Outbound / Inbound
+  const KEYS = ["rev", "fix", "pay"];
+  groups.forEach(x => { x.a = {}; KEYS.forEach(k => x.a[k] = avg(x.rows, r => r.st[k])); x.top = KEYS.slice().sort((p, q) => x.a[q] - x.a[p])[0]; });
+  const sameTop = groups.every(x => x.top === groups[0].top);
+  const a = { pay: avg(rows, r => r.st.pay) };
+  items.push({ ic: "clock", c: groups[0].top === "rev" ? "blue" : groups[0].top === "fix" ? "orange" : "aqua", tag: "Waktu",
+    h: sameTop ? `${groups.map(x => x.g).join(" & ")}: waktu terlama di ${STAGE[groups[0].top].name.toLowerCase()}`
+               : groups.map(x => `${x.g} terlama di ${STAGE[x.top].name.toLowerCase()}`).join(", "),
+    p: `Lama Submit → Paid dibagi 3 tahap. Angka di bawah adalah rata-rata hari untuk satu invoice:<ul>${groups.map(x => {
+          const order = KEYS.slice().sort((p, q) => x.a[q] - x.a[p]);
+          return `<li>${gName(x)}, ${x.rows.length} invoice: <span class="stgs">${order.map((k, i) => `<span class="stg"><i class="sq" style="background:${STAGE[k].col}"></i>${STAGE[k].name} ${i === 0 ? `<b>${Math.round(x.a[k])} hari</b>` : Math.round(x.a[k]) + " hari"}</span>`).join("")}</span></li>`;
+        }).join("")}</ul>` });
 
   // 4. Setelah resubmit terakhir
   const pays = rows.map(r => ({ r, d: r.st.pay })).sort((x, y) => x.d - y.d);
   items.push({ ic: "check", c: "aqua", tag: "Pembayaran",
     h: `Paid rata-rata ${Math.round(a.pay)} hari setelah dokumen terakhir masuk`,
-    p: `Tercepat <b>${pays[0].d} hari</b> (${esc(short(pays[0].r.partner))}), terlama <b>${pays[pays.length - 1].d} hari</b> (${esc(short(pays[pays.length - 1].r.partner))}${pays[pays.length - 1].r.dummy ? ", dummy" : ""}).` });
+    p: `<ul>${groups.map(x => `<li>${gName(x)}: rata-rata <b>${Math.round(x.a.pay)} hari</b></li>`).join("")}</ul>Tercepat ${pays[0].d} hari (${esc(pays[0].r.partner)}), terlama ${pays[pays.length - 1].d} hari (${esc(pays[pays.length - 1].r.partner)}${pays[pays.length - 1].r.dummy ? ", dummy" : ""}).` });
 
   // 5. Invoice terlama
   const lon = rows.slice().sort((x, y) => y.st.total - x.st.total)[0];
   items.push({ ic: "slow", c: "", tag: "Terlama",
-    h: `${esc(short(lon.desc))}: ${lon.st.total} hari sampai paid`,
-    p: `Submit ${fmtD(lon.submit)}, paid ${fmtD(lon.paid)}, ${lon.cycles.length}× return. Rata-rata semua invoice <b>${Math.round(avg(rows, r => r.st.total))} hari</b>.` });
+    h: `Invoice terlama: ${lon.st.total} hari dari submit sampai paid`,
+    p: `<b>${esc(lon.desc)}</b> · ${esc(lon.partner)} (${lon.seg}). Submit ${fmtD(lon.submit)}, paid ${fmtD(lon.paid)}, ${lon.cycles.length}× return.<ul>${groups.map(x => `<li>Rata-rata ${gName(x)}: ${Math.round(avg(x.rows, r => r.st.total))} hari</li>`).join("")}</ul>` });
 
   // 6. Data perlu dicek
   const missing = [];
@@ -669,18 +684,18 @@ function renderInsights() {
   if (missing.length) {
     items.push({ ic: "warn", c: "warn", tag: "Perlu dicek",
       h: `${missing.length} return belum punya tanggal resubmit`,
-      p: missing.map(m => `<b>${esc(short(m.r.partner))}</b> return ke-${m.i + 1} (${fmtD(m.ret)})`).join(", ") + ". Lengkapi di Database Project Outbound." });
+      p: missing.map(m => `<b>${esc(m.r.partner)}</b> return ke-${m.i + 1} (${fmtD(m.ret)})`).join(", ") + ". Lengkapi di Database Project Outbound." });
   } else if (dummies.length) {
     items.push({ ic: "warn", c: "warn", tag: "Perlu dicek",
       h: `${dummies.length} invoice masih memakai tanggal dummy`,
-      p: `Return/Resubmit untuk ${dummies.map(r => `<b>${esc(short(r.partner))}</b>`).join(", ")} masih contoh.` });
+      p: `Return/Resubmit untuk ${dummies.map(r => `<b>${esc(r.partner)}</b>`).join(", ")} masih contoh.` });
   } else {
     const same = rows.filter(r => r.cycles.some(([x, y]) => y && days(x, y) === 0)).length;
     items.push({ ic: "check", c: "aqua", tag: "Data", h: "Tanggal Return & Resubmit lengkap",
       p: same ? `${same} invoice di-resubmit di hari yang sama dengan tanggal return.` : "Semua siklus return sudah punya tanggal resubmit." });
   }
 
-  $("ins").innerHTML = items.map(it => `<div class="ins"><div class="ic ${it.c}">${ICON[it.ic]}</div><div><div class="tag">${it.tag}</div><h3>${it.h}</h3><p>${it.p}</p></div></div>`).join("");
+  $("ins").innerHTML = items.map(it => `<div class="ins"><div class="ic ${it.c}">${ICON[it.ic]}</div><div><div class="tag">${it.tag}</div><h3>${it.h}</h3><div class="p">${it.p}</div></div></div>`).join("");
   $("ins-foot").textContent = dummies.length ? `Catatan: ${dummies.length} invoice Inbound memakai tanggal Return/Resubmit dummy, jadi angka waktu yang melibatkan Inbound masih perkiraan.` : "";
 }
 
