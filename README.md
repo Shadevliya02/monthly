@@ -12,7 +12,8 @@ Open `index.html` in a browser, or deploy the folder as-is (e.g. Vercel, preset 
   Sub-menus open it pre-filtered: Outbound, Inbound, Returned, In review. Click a row for the invoice timeline.
 
 ## Updating the data
-1. Replace `data/Order_Outbound_Inbound_2026.xlsx` with the new export (sheet `Orders`, same columns).
-2. Return/resubmit dates live in `data/return_dates.json`, keyed by invoice number.
-3. Run `pip install openpyxl` once, then `python3 tools/build_data.py`. This rewrites `data.js`.
-4. Commit and push; Vercel redeploys automatically.
+- `data/Order_Outbound_Inbound_2026.xlsx`: base list of all orders (sheet `Orders`).
+- `data/PAID_*.xlsx`: paid updates (sheet `Orders`). Rows with an existing invoice number update that order; new invoice numbers are added. Orders not in the update file are kept as they are.
+- `data/return_dates.json`: return/resubmit dates, keyed by invoice number.
+
+Run `pip install openpyxl` once, then `python3 tools/build_data.py` to rewrite `data.js`. Commit and push; Vercel redeploys automatically.

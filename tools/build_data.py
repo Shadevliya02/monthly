@@ -1,22 +1,41 @@
-"""Build data.js for the dashboard from the Orders sheet of the xlsx export.
+"""Build data.js for the dashboard from the xlsx exports.
 
-Usage:  python3 tools/build_data.py [path/to/Order_Outbound_Inbound_2026.xlsx]
+Usage:  python3 tools/build_data.py
 Needs:  pip install openpyxl
+
+Sources (in data/):
+  Order_Outbound_Inbound_2026.xlsx  base list of all orders (sheet "Orders")
+  PAID_*.xlsx                       paid updates (sheet "Orders"); applied in name order.
+                                    A row whose invoice number already exists updates that order,
+                                    otherwise it is added as a new order.
+  return_dates.json                 return/resubmit cycles keyed by invoice number
 """
 import datetime
 import json
 import pathlib
 import re
-import sys
 
 import openpyxl
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SRC = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "data" / "Order_Outbound_Inbound_2026.xlsx"
-RETURNS = ROOT / "data" / "return_dates.json"
+DATA = ROOT / "data"
+BASE = DATA / "Order_Outbound_Inbound_2026.xlsx"
 OUT = ROOT / "data.js"
 
-STATUS = {"paid": "paid", "review": "review", "returned": "returned"}
+# accepted header names per field (exports are not always consistent)
+COLS = {
+    "no": ["No.", "No"],
+    "work": ["Type of Work"],
+    "project": ["Type Project"],
+    "partner": ["Partner"],
+    "contract": ["Contract Number"],
+    "desc": ["Description"],
+    "inv": ["Invoice Number"],
+    "value": ["BAST Value"],
+    "status": ["Current Status", "Status Payment"],
+    "submit": ["Submit Invoice Date"],
+    "paid": ["Paid Date"],
+}
 
 
 def clean(v):
@@ -24,6 +43,10 @@ def clean(v):
         return ""
     s = str(v).replace("​", "").replace("\xa0", " ")
     return re.sub(r"\s+", " ", s).strip()
+
+
+def key(inv):
+    return re.sub(r"\s+", "", clean(inv)).upper()
 
 
 def date(v):
@@ -40,40 +63,72 @@ def date(v):
     raise ValueError(f"Unrecognised date: {v!r}")
 
 
-def main():
-    ws = openpyxl.load_workbook(SRC, data_only=True)["Orders"]
+def read(path):
+    ws = openpyxl.load_workbook(path, data_only=True)["Orders"]
     header = [clean(c) for c in next(ws.iter_rows(max_row=1, values_only=True))]
-    col = {name: i for i, name in enumerate(header)}
-    returns = {k: v for k, v in json.loads(RETURNS.read_text()).items() if not k.startswith("_")}
-
+    idx = {}
+    for field, names in COLS.items():
+        found = [header.index(n) for n in names if n in header]
+        if not found:
+            raise KeyError(f"{path.name}: column for {field!r} not found (looked for {names})")
+        idx[field] = found[0]
     rows = []
     for r in ws.iter_rows(min_row=2, values_only=True):
         if not any(c is not None for c in r):
             continue
-        inv = clean(r[col["Invoice Number"]])
-        status = clean(r[col["Current Status"]]).lower()
         rows.append({
-            "no": r[col["No."]],
-            "work": clean(r[col["Type of Work"]]),
-            "project": clean(r[col["Type Project"]]),
-            "partner": clean(r[col["Partner"]]),
-            "contract": clean(r[col["Contract Number"]]),
-            "desc": clean(r[col["Description"]]),
-            "inv": inv,
-            "value": float(r[col["BAST Value"]] or 0),
-            "status": STATUS.get(status, status),
-            "submit": date(r[col["Submit Invoice Date"]]),
-            "paid": date(r[col["Paid Date"]]),
-            "cycles": returns.get(inv, []),
+            "no": r[idx["no"]],
+            "work": clean(r[idx["work"]]),
+            "project": clean(r[idx["project"]]),
+            "partner": clean(r[idx["partner"]]),
+            "contract": clean(r[idx["contract"]]),
+            "desc": clean(r[idx["desc"]]),
+            "inv": clean(r[idx["inv"]]),
+            "value": float(r[idx["value"]] or 0),
+            "status": clean(r[idx["status"]]).lower(),
+            "submit": date(r[idx["submit"]]),
+            "paid": date(r[idx["paid"]]),
         })
+    return rows
 
-    payload = {
-        "source": SRC.name,
-        "built": datetime.date.today().isoformat(),
-        "orders": rows,
-    }
+
+def main():
+    orders = read(BASE)
+    by_key = {}
+    for o in orders:
+        by_key.setdefault(key(o["inv"]), []).append(o)
+    next_no = max(o["no"] for o in orders) + 1
+
+    sources = [BASE.name]
+    stats = []
+    for path in sorted(DATA.glob("PAID_*.xlsx")):
+        updated = added = 0
+        for u in read(path):
+            u["status"] = u["status"] or "paid"
+            matches = by_key.get(key(u["inv"]))
+            if matches:
+                for o in matches:
+                    o.update({k: v for k, v in u.items() if k != "no"})
+                updated += 1
+            else:
+                u["no"] = next_no
+                next_no += 1
+                orders.append(u)
+                by_key[key(u["inv"])] = [u]
+                added += 1
+        sources.append(path.name)
+        stats.append(f"{path.name}: {updated} updated, {added} added")
+
+    returns = {key(k): v for k, v in json.loads((DATA / "return_dates.json").read_text()).items() if not k.startswith("_")}
+    for o in orders:
+        o["cycles"] = returns.get(key(o["inv"]), [])
+
+    payload = {"source": " + ".join(sources), "built": datetime.date.today().isoformat(), "orders": orders}
     OUT.write_text("window.PAYMENT_DATA = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n")
-    print(f"Wrote {OUT} with {len(rows)} orders ({sum(1 for r in rows if r['cycles'])} with return dates)")
+    print(f"Wrote {OUT.name}: {len(orders)} orders, {sum(o['status'] == 'paid' for o in orders)} paid, "
+          f"{sum(bool(o['cycles']) for o in orders)} with return dates")
+    for s in stats:
+        print("  " + s)
 
 
 if __name__ == "__main__":
