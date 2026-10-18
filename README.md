@@ -5,7 +5,7 @@ Static web dashboard (no build step for the page itself) for invoices paid in 20
 Open `index.html` in a browser, or deploy the folder as-is (e.g. Vercel, preset "Other").
 
 ## Pages
-- **KPI Dashboard**: one-screen overview. Pick `2026` for the full year or a month to zoom in.
+- **Dashboard**: one-screen overview. Pick `2026` for the full year or a month to zoom in.
   Total paid (Outbound vs Inbound), paid per month, invoices not paid yet (returned / in review),
   average days from submit to paid, payment speed buckets, return history, top partners, and the invoices waiting longest.
 - **Invoice data**: the full list with filters (type, partner, status, paid month, search), sorting and paging.
