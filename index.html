@@ -1,1020 +1,832 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!--PAGE-START-->
-<title>Dashboard Paid Monthly</title>
+<title>Paid Monthly Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: 16:9 app shell — sidebar gelap kiri; kanan: header + bulan, KPI, ringkasan analisis, grafik, tabel paid dengan timeline.
-   Tema utama terang; mode gelap opsional lewat tombol (class .dark di <html>). */
+/* Layout: 16:9 KPI wall. Dark sidebar left; right = one-screen tile grid (big numbers, few words).
+   Full invoice table lives on its own page under "Invoice data". Light theme first, dark optional. */
 :root {
   color-scheme: light;
-  --bg: #f5f3f2;
+  --bg: #f4f2f1;
   --surface: #ffffff;
-  --surface-2: #faf7f6;
-  --ink: #1e1718;
-  --ink-2: #5e5355;
-  --ink-3: #887d7f;
+  --surface-2: #f8f6f5;
+  --ink: #1d1718;
+  --ink-2: #5b5052;
+  --ink-3: #8a7f81;
   --line: #e8e2e1;
   --accent: #b3141c;
   --accent-ink: #ffffff;
-  --accent-soft: #fbebec;
-  --side: #231b1c;
-  --side-ink: #ebe4e4;
+  --accent-soft: #fbeced;
+  --side: #221a1b;
+  --side-ink: #ece5e5;
   --side-ink-2: #a3989a;
   --side-hover: #2f2526;
   --side-active: #b3141c;
-  --s1: #2a78d6;  /* Review dokumen */
-  --s2: #eb6834;  /* Revisi partner */
-  --s3: #1baf7a;  /* Menuju paid */
+  --out: #2a78d6;      /* Outbound */
+  --in: #1baf7a;       /* Inbound · Project Delta */
   --bar: #55606f;
-  --good: #1f7a3a;
-  --good-soft: #e5f2e9;
-  --warn: #a35a00;
-  --warn-soft: #fdf1df;
-  --shadow: 0 1px 2px rgba(35,27,28,.05), 0 6px 18px rgba(35,27,28,.04);
+  --good: #1f7a3a;  --good-soft: #e5f2e9;
+  --warn: #9a5a00;  --warn-soft: #fdf1df;
+  --bad: #c0262d;   --bad-soft: #fde8e8;
+  --shadow: 0 1px 2px rgba(34,26,27,.05), 0 6px 18px rgba(34,26,27,.04);
   --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 :root.dark {
   color-scheme: dark;
-  --bg: #131011; --surface: #1c1718; --surface-2: #221c1d; --ink: #f3eded; --ink-2: #c0b5b6; --ink-3: #91868a;
-  --line: #342b2c; --accent: #e2474e; --accent-ink: #1a0f10; --accent-soft: #3a1e20;
-  --side: #0e0b0b; --side-ink: #ece5e5; --side-ink-2: #9a8f90; --side-hover: #1f1819; --side-active: #b3141c;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --bar: #8d99aa; --good: #4cc07a; --good-soft: #17301f;
-  --warn: #f0b04a; --warn-soft: #3a2a12;
+  --bg: #121018; --surface: #1d1a26; --surface-2: #242030; --ink: #f2eff6; --ink-2: #c3bdcb; --ink-3: #8f889a;
+  --line: #322d3d; --accent: #e2474e; --accent-ink: #1a0f10; --accent-soft: #3a1e24;
+  --side: #0c0a11; --side-ink: #ece8f2; --side-ink-2: #9690a2; --side-hover: #1b1823; --side-active: #b3141c;
+  --out: #3987e5; --in: #199e70; --bar: #8d99aa;
+  --good: #4cc07a; --good-soft: #17301f; --warn: #f0b04a; --warn-soft: #3a2a12; --bad: #ff6b6b; --bad-soft: #3d1a1e;
   --shadow: 0 1px 2px rgba(0,0,0,.4);
 }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
-body {
-  margin: 0; background: var(--bg); color: var(--ink);
-  font: 400 13px/1.45 var(--f-body);
-  -webkit-font-smoothing: antialiased;
-}
-button, input { font: inherit; color: inherit; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 13px/1.45 var(--f-body); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
 
 /* ---------- Shell ---------- */
-.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); height: 100%; }
+.app { display: grid; grid-template-columns: 240px minmax(0, 1fr); height: 100%; }
 .side {
-  background: var(--side); color: var(--side-ink);
-  display: flex; flex-direction: column; gap: 6px; overflow-y: auto;
-  padding-block: 22px 18px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+  padding-block: 22px 18px; padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: 14px;
 }
-.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 8px; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 6px; }
 .brand-mark { width: 36px; height: 36px; border-radius: 9px; background: var(--side-active); display: grid; place-items: center; flex: none; }
 .brand-mark svg { width: 20px; height: 20px; }
-.brand b { display: block; font: 800 16px/1.15 var(--f-display); letter-spacing: -.01em; }
+.brand b { display: block; font: 800 16px/1.15 var(--f-display); }
 .brand span { display: block; font-size: 11.5px; color: var(--side-ink-2); margin-top: 2px; }
 .nav-label { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--side-ink-2); padding: 14px 10px 6px; }
 .nav { display: flex; flex-direction: column; gap: 2px; }
 .nav button {
-  display: flex; align-items: center; gap: 12px; width: 100%;
-  padding: 10px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--side-ink);
-  font-weight: 500; font-size: 13.5px; text-align: left; cursor: pointer; white-space: nowrap;
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--side-ink); font-weight: 500; font-size: 13.5px; text-align: left; cursor: pointer; white-space: nowrap;
 }
 .nav button svg { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
 .nav button:hover { background: var(--side-hover); }
 .nav button.active { background: var(--side-active); color: #fff; font-weight: 600; }
+.nav .sub button { padding-left: 42px; font-size: 13px; }
 .nav button .count { margin-left: auto; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; background: rgba(255,255,255,.1); }
 .nav button.active .count { background: rgba(255,255,255,.22); }
-.nav button .soon { margin-left: auto; font-size: 10px; color: var(--side-ink-2); border: 1px solid rgba(255,255,255,.14); border-radius: 99px; padding: 0 7px; }
 .side-foot { margin-top: auto; padding: 14px 10px 0; font-size: 11.5px; color: var(--side-ink-2); border-top: 1px solid rgba(255,255,255,.08); }
 
 .main { overflow-y: auto; min-width: 0; }
-.main-inner {
-  display: flex; flex-direction: column; gap: 18px;
-  padding-block: 24px 32px;
-  padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px));
-  max-width: 1720px;
+.page {
+  display: flex; flex-direction: column; gap: 16px; min-height: 100%;
+  padding-block: 20px 24px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
 }
 
 /* ---------- Header ---------- */
-.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-h1 { font: 800 28px/1.15 var(--f-display); letter-spacing: -.02em; margin: 4px 0 4px; text-wrap: balance; }
-.sub { color: var(--ink-2); font-size: 13.5px; }
-.sub b { color: var(--ink); font-weight: 600; }
-.head-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.search { position: relative; }
-.search input {
-  width: 280px; max-width: 100%; height: 38px; padding: 0 12px 0 34px; border-radius: 9px;
-  border: 1px solid var(--line); background: var(--surface);
+.head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.head h1 { font: 800 24px/1.15 var(--f-display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.head .sub { color: var(--ink-2); font-size: 13px; margin-top: 3px; }
+.head .sub b { color: var(--ink); font-weight: 600; }
+.tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 100%; }
+.periods { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; overflow-x: auto; max-width: 100%; }
+.periods button { border: 0; background: transparent; height: 32px; min-width: 42px; padding: 0 9px; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.periods button:hover { background: var(--surface-2); color: var(--ink); }
+.periods button.empty { color: var(--ink-3); font-weight: 500; }
+.periods button.year { font-weight: 800; color: var(--ink); margin-right: 4px; }
+.periods button.on { background: var(--accent); color: var(--accent-ink); }
+.ghost-btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px; border: 1px solid var(--line);
+  background: var(--surface); border-radius: 9px; cursor: pointer; font-weight: 600; font-size: 12.5px; white-space: nowrap;
 }
-.search svg { position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; stroke: var(--ink-3); fill: none; stroke-width: 2; }
-.theme-btn {
-  display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px;
-  border: 1px solid var(--line); background: var(--surface); border-radius: 9px; cursor: pointer; font-weight: 600; font-size: 12.5px; white-space: nowrap;
+.ghost-btn:hover { background: var(--surface-2); }
+.ghost-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- KPI grid ---------- */
+#v-dash { height: 100%; min-height: 720px; }
+.grid {
+  flex: 1; display: grid; gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr)); min-height: 0;
+  grid-template-areas: "total trend trend open" "days speed returns partners" "waiting waiting waiting partners";
 }
-.theme-btn:hover { background: var(--surface-2); }
-.theme-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow: hidden; position: relative; }
+.tile-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tile-h h2 { margin: 0; font: 700 15px/1.25 var(--f-display); }
+.tile-h .hint { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.big { font: 800 44px/1 var(--f-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.big small { font-size: .45em; font-weight: 700; letter-spacing: 0; margin-left: 4px; color: var(--ink-2); }
+.big-sub { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.big-sub b { color: var(--ink); }
+.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; font-size: 12px; cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.empty-note { color: var(--ink-3); font-size: 13px; margin: auto 0; }
 
-.months {
-  display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; padding: 8px 10px; box-shadow: var(--shadow); overflow-x: auto;
-}
-.months .yr { font: 700 13px var(--f-display); padding: 0 8px 0 4px; color: var(--ink-2); border-right: 1px solid var(--line); margin-right: 2px; white-space: nowrap; }
-.mchips { display: grid; grid-template-columns: repeat(12, minmax(62px, 1fr)); gap: 4px; flex: 1; }
-.mchip {
-  position: relative; height: 34px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
-  font-weight: 600; font-size: 13px; color: var(--ink-2);
-}
-.mchip:hover { background: var(--surface-2); color: var(--ink); }
-.mchip.has::after { content: ""; position: absolute; top: 6px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-.mchip.on { background: var(--accent); color: var(--accent-ink); }
-.mchip.on::after { background: var(--accent-ink); }
-.mchip.future { color: var(--ink-3); }
+/* split rows (Outbound / Inbound) */
+.split { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+.split-row .lbl { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; }
+.split-row .lbl span { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
+.split-row .lbl i { width: 10px; height: 10px; border-radius: 3px; }
+.split-row .lbl b { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.split-row .lbl em { font-style: normal; color: var(--ink-3); font-size: 12px; margin-left: 6px; font-weight: 500; }
+.meter { height: 6px; border-radius: 3px; background: var(--surface-2); margin-top: 5px; overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 3px; }
 
-/* ---------- KPI ---------- */
-.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
-.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.kpi .k { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
-.kpi .k i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink-3); }
-.kpi .v { font: 800 22px/1.2 var(--f-display); letter-spacing: -.015em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.kpi .n { font-size: 12px; color: var(--ink-3); }
-.kpi .n b { color: var(--ink-2); font-weight: 600; }
-.kpi.lead { background: var(--side); color: var(--side-ink); border-color: var(--side); }
-.kpi.lead .k, .kpi.lead .n { color: var(--side-ink-2); }
-.kpi.lead .n b { color: var(--side-ink); }
-.kpis { grid-template-columns: repeat(3, minmax(0, 1fr)) repeat(2, minmax(0, 1.5fr)); }
-.kpi .pair { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 14px; }
-.kpi .pair > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.kpi .pair > div + div { border-left: 1px solid var(--line); padding-left: 14px; }
-.kpi .sl { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
-.kpi .sl .dummy { margin: 0; font-size: 9px; padding: 0 4px; }
-.kpi.split .v { font-size: 20px; }
+/* two big numbers side by side */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: auto 0; }
+.duo > div + div { border-left: 1px solid var(--line); padding-left: 14px; }
+.duo .k { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+.duo .k i { width: 10px; height: 10px; border-radius: 3px; }
+.duo .big { font-size: 40px; }
+.duo .n { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
 
-/* ---------- Insights ---------- */
-.insights { padding: 0 0 4px; }
-.ins-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px 10px; }
-.ins-h h2 { font: 700 15px var(--f-display); margin: 0; }
-.ins-h p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
-.ins-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.ins { background: var(--surface); padding: 14px 16px 16px; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
-.ins .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); }
-.ins .ic svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.ins .ic.blue { color: var(--s1); }
-.ins .ic.orange { color: var(--s2); }
-.ins .ic.aqua { color: var(--s3); }
-.ins .ic.warn { color: var(--warn); background: var(--warn-soft); }
-.ins .tag { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
-.ins h3 { margin: 2px 0 4px; font: 700 14.5px/1.35 var(--f-display); text-wrap: balance; }
-.ins .p { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 62ch; }
-.ins .p b { color: var(--ink); font-weight: 600; }
-.ins .p ul { margin: 4px 0 6px; padding: 0 0 0 16px; display: flex; flex-direction: column; gap: 3px; }
-.ins .p ul li::marker { color: var(--ink-3); }
-.ins .p .sub-h { display: block; margin-top: 2px; }
-.ins .p .stgs { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 2px; }
-.ins .p .stg { white-space: nowrap; }
-.ins .p .sq { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: 0; }
-.ins-foot { font-size: 11.5px; color: var(--ink-3); padding: 10px 16px 12px; }
+/* bars list */
+.bars { display: flex; flex-direction: column; gap: 9px; margin-top: auto; margin-bottom: auto; }
+.bars .row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 52px; align-items: center; gap: 10px; font-size: 12.5px; }
+.bars .row .l b { display: block; font-weight: 700; white-space: nowrap; }
+.bars .row .l span { display: block; font-size: 11px; color: var(--ink-3); }
+.bars .row .track { height: 12px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.bars .row .track span { display: block; height: 100%; border-radius: 4px; background: var(--bar); }
+.bars .row .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.bars .row .v em { font-style: normal; display: block; font-size: 11px; color: var(--ink-3); font-weight: 500; }
 
-/* ---------- Panels ---------- */
-.panels { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
-.card-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px 6px; flex-wrap: wrap; }
-.card-h h2 { font: 700 15px var(--f-display); margin: 0; }
-.card-h p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+/* partner list */
+.plist { display: flex; flex-direction: column; gap: 2px; overflow: auto; margin: 0 -6px; }
+.plist button { display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 7px 6px 8px; cursor: pointer; }
+.plist button:hover { background: var(--surface-2); }
+.plist .top { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.plist .top span { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.plist .top b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.plist .meta { font-size: 11px; color: var(--ink-3); display: flex; justify-content: space-between; }
+.plist .meter { height: 5px; margin-top: 4px; }
+
+/* open tile */
+.tile.alert { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.alert-dot { position: absolute; top: 14px; right: 14px; width: 26px; height: 26px; border-radius: 50%; background: var(--bad); color: #fff; display: grid; place-items: center; font: 800 15px/1 var(--f-display); }
+.status-rows { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+.status-rows button { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; cursor: pointer; text-align: left; }
+.status-rows button:hover { background: var(--surface-2); }
+.status-rows .cnt { font: 800 18px var(--f-display); font-variant-numeric: tabular-nums; }
+.status-rows .val { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; width: max-content; }
+.chip svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.chip.paid { background: var(--good-soft); color: var(--good); }
+.chip.review { background: var(--warn-soft); color: var(--warn); }
+.chip.returned { background: var(--bad-soft); color: var(--bad); }
+
+/* trend chart */
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 2px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 3px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); flex-wrap: wrap; align-items: center; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.legend i.dot { border-radius: 50%; }
-.legend i.ring { border-radius: 50%; background: var(--surface) !important; border: 2px solid; width: 10px; height: 10px; }
-.chart { padding: 4px 16px 14px; }
-.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; }
+.chart { flex: 1; min-height: 120px; position: relative; }
+.chart svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
 .chart text { font-family: var(--f-body); }
 
-/* ---------- Table ---------- */
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px 12px; }
-.toolbar h2 { font: 700 15px var(--f-display); margin: 0; }
-.toolbar p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
-.tlegend { padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
-.seg { display: inline-flex; max-width: 100%; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; }
-.seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
-.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-.seg button .c { color: var(--ink-3); font-weight: 500; margin-left: 4px; }
-.tbl-wrap { overflow-x: auto; }
-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
-thead th {
-  text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .03em; color: var(--ink-2);
-  background: var(--surface-2); padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: bottom; line-height: 1.3;
-}
-thead th small { display: block; font-weight: 500; letter-spacing: 0; color: var(--ink-3); font-size: 10.5px; margin-top: 2px; }
-thead th.tl-h { padding-bottom: 4px; }
-thead th.hl > span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; background: var(--hc); }
-tbody td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-tbody tr.row { cursor: pointer; }
-tbody tr.row:hover td { background: var(--surface-2); }
-tbody tr.row.sel td { background: var(--accent-soft); }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-td.mono, .mono { font-family: var(--f-mono); font-size: 11px; }
-td.date { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
-td.desc { min-width: 170px; max-width: 210px; }
-td.partner { min-width: 110px; max-width: 140px; }
-td.nowrap { white-space: nowrap; }
-.no { color: var(--ink-3); font-variant-numeric: tabular-nums; }
-tr.grp td { background: var(--surface-2); font-weight: 700; padding-block: 8px; border-bottom: 1px solid var(--line); }
-tr.grp td .gtag { display: inline-flex; align-items: center; gap: 8px; }
-tr.grp td .gtag i { width: 4px; height: 14px; border-radius: 2px; background: var(--accent); }
-tr.grp td small { font-weight: 500; color: var(--ink-3); margin-left: 8px; font-size: 12px; }
-tr.sub td { font-weight: 600; color: var(--ink-2); background: var(--surface); }
-tr.total td { font-weight: 800; font-size: 13px; background: var(--surface-2); border-bottom: 0; }
-.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; background: var(--good-soft); color: var(--good); white-space: nowrap; }
-.pill svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.6; }
-/* baris siklus: tinggi sama agar Return ke-n sejajar dengan Resubmit ke-n */
-.cyc { display: flex; flex-direction: column; }
-.cyc .ln { height: 20px; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.cyc .ln b { font-weight: 600; }
-.cyc .rk { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font-size: 10px; font-weight: 700; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
-.cyc .g { font-size: 11px; color: var(--ink-3); }
-.cyc .miss { color: var(--warn); font-size: 11.5px; font-weight: 600; }
-.cyc .foot { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
-.nil { color: var(--ink-3); }
-.dummy { display: inline-block; margin-top: 3px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); border: 1px dashed var(--ink-3); border-radius: 4px; padding: 0 5px; width: max-content; }
-.tl-cap { font-size: 11px; color: var(--ink-2); margin-bottom: 2px; white-space: nowrap; }
-.tl-cap b { color: var(--ink); }
-td.tl { padding-top: 8px; }
+/* waiting list */
+.wlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; }
+.wlist button { display: grid; grid-template-columns: 92px minmax(0, 1fr) 130px 84px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 8px 6px; text-align: left; cursor: pointer; }
+.wlist button:first-child { border-top: 0; }
+.wlist button:hover { background: var(--surface-2); }
+.wlist .who b { display: block; font-weight: 700; font-size: 13px; }
+.wlist .who span { display: block; font-size: 12px; color: var(--ink-2); overflow-wrap: anywhere; }
+.wlist .amt { text-align: right; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.wlist .age { text-align: right; }
+.wlist .age b { display: block; font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.wlist .age span { font-size: 11px; color: var(--ink-3); }
 
-.empty { padding: 56px 24px; text-align: center; color: var(--ink-2); }
-.empty b { display: block; font: 700 16px var(--f-display); color: var(--ink); margin-bottom: 6px; }
-.note { font-size: 11.5px; color: var(--ink-3); padding: 10px 16px 14px; }
+/* return history */
+.rstats { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+.rstats div { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: baseline; }
+.rstats b { font: 800 22px/1 var(--f-display); font-variant-numeric: tabular-nums; text-align: right; }
+.rstats span { font-size: 12.5px; color: var(--ink-2); }
+.foot-note { font-size: 11.5px; color: var(--ink-3); }
+
+/* ---------- Table page ---------- */
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700; color: var(--ink-2); letter-spacing: .02em; min-width: 0; }
+.filters select, .filters input { height: 36px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 0 10px; font-size: 13px; font-weight: 500; min-width: 0; max-width: 100%; }
+.filters .q input { width: 260px; max-width: 100%; }
+.filters select { min-width: 150px; max-width: 240px; }
+.filters .grow { flex: 1; }
+.summary { display: flex; gap: 18px; flex-wrap: wrap; align-items: baseline; font-size: 13px; color: var(--ink-2); }
+.summary b { font: 800 20px var(--f-display); color: var(--ink); margin-right: 4px; font-variant-numeric: tabular-nums; }
+.pill-x { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
+thead th { text-align: left; font-size: 11px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); padding: 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+thead th.sort { cursor: pointer; }
+thead th.sort:hover { color: var(--ink); }
+thead th .dir { color: var(--accent); margin-left: 3px; }
+tbody td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--surface-2); }
+td.r, th.r { text-align: right; }
+td.nw { white-space: nowrap; }
+td.mono { font-family: var(--f-mono); font-size: 11px; }
+td.desc { min-width: 240px; max-width: 360px; }
+td.partner { min-width: 140px; max-width: 200px; font-weight: 600; }
+td .muted, .muted { color: var(--ink-3); }
+td .dl { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.pager .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.pager button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; height: 32px; min-width: 32px; padding: 0 10px; cursor: pointer; font-weight: 600; }
+.pager button[disabled] { opacity: .4; cursor: default; }
+.pager button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
 /* ---------- Tooltip & drawer ---------- */
-.tip {
-  position: fixed; z-index: 50; pointer-events: none; background: var(--ink); color: var(--bg);
-  padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4; max-width: 280px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.2);
-}
-.tip b { font-weight: 700; }
-.scrim { position: fixed; inset: 0; background: rgba(20,14,15,.35); z-index: 30; }
+.tip { position: fixed; z-index: 60; pointer-events: none; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45; max-width: 300px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+.scrim { position: fixed; inset: 0; background: rgba(18,14,16,.35); z-index: 30; }
 .drawer {
-  position: fixed; z-index: 40; top: 0; right: 0; bottom: 0; width: 440px; max-width: 100%;
-  background: var(--surface); border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,.12);
-  display: flex; flex-direction: column;
+  position: fixed; z-index: 40; top: 0; right: 0; bottom: 0; width: 460px; max-width: 100%; background: var(--surface);
+  border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,.12); display: flex; flex-direction: column;
   padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px);
 }
 .dr-h { padding: 20px 22px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
-.dr-h h3 { margin: 4px 0 6px; font: 700 16px/1.35 var(--f-display); text-wrap: balance; }
-.dr-h .meta { font-size: 12px; color: var(--ink-2); }
+.dr-h .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.dr-h h3 { margin: 4px 0 8px; font: 700 16px/1.35 var(--f-display); }
 .dr-x { margin-left: auto; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: none; display: grid; place-items: center; }
 .dr-x svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
 .dr-b { padding: 18px 22px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
-.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
 .facts div span { display: block; font-size: 11px; color: var(--ink-3); font-weight: 600; }
-.facts div b { font-weight: 600; font-variant-numeric: tabular-nums; }
-.mix { display: flex; flex-direction: column; gap: 6px; }
-.mix .bar { display: flex; gap: 2px; height: 10px; }
-.mix .bar span { display: block; height: 100%; border-radius: 3px; }
-.mix .lg { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-2); }
-.mix .lg i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.facts div b { font-weight: 600; overflow-wrap: anywhere; }
+.facts .wide { grid-column: 1 / -1; }
 .steps { list-style: none; margin: 0; padding: 0; }
 .steps li { display: grid; grid-template-columns: 22px 1fr auto; gap: 0 12px; }
 .steps .dot { width: 14px; height: 14px; border-radius: 50%; margin: 3px 4px 0; background: var(--surface); border: 2px solid var(--ink-3); }
 .steps .lbl { font-weight: 600; }
 .steps .dt { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-2); }
-.steps .dt.miss { color: var(--warn); }
-.steps .link { grid-column: 1 / -1; display: grid; grid-template-columns: 22px 1fr; gap: 12px; }
-.steps .link .bar { width: 4px; margin: 2px auto; border-radius: 2px; min-height: 26px; }
-.steps .link .txt { font-size: 12px; color: var(--ink-2); align-self: center; padding: 6px 0; }
-.steps .link .txt b { color: var(--ink); }
+.steps .link-row { grid-column: 1 / -1; display: grid; grid-template-columns: 22px 1fr; gap: 12px; }
+.steps .link-row .bar { width: 4px; margin: 2px auto; border-radius: 2px; min-height: 24px; }
+.steps .link-row .txt { font-size: 12px; color: var(--ink-2); align-self: center; padding: 5px 0; }
+.steps .link-row .txt b { color: var(--ink); }
 
-@media (max-width: 1280px) {
-  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .kpi.split { grid-column: span 3; }
-  .panels { grid-template-columns: minmax(0, 1fr); }
-  .ins-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* one-screen layout only where the 16:9 wall has room; otherwise tiles take their natural height and the page scrolls */
+@media (max-width: 1600px), (max-height: 1000px) {
+  #v-dash { height: auto; }
+  .grid { grid-template-rows: none; grid-auto-rows: minmax(260px, auto); }
+  .tile.trend-t { min-height: 320px; }
+}
+@media (max-width: 1400px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: minmax(250px, auto);
+    grid-template-areas: "total open" "trend trend" "days speed" "returns partners" "waiting waiting"; }
+  .tile.trend-t { min-height: 300px; }
 }
 @media (max-width: 960px) {
   html, body { height: auto; }
   .app { grid-template-columns: minmax(0, 1fr); height: auto; }
-  .side { padding-block: 14px 10px; padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 4px; }
-  .brand { border: 0; padding-bottom: 6px; margin: 0; }
+  .side { padding-block: 12px 10px; padding-right: max(14px, env(safe-area-inset-right, 0px)); }
+  .brand { border: 0; padding-bottom: 4px; margin: 0; }
   .nav-label, .side-foot { display: none; }
   .nav-scroll { display: flex; overflow-x: auto; gap: 2px; }
   .nav { flex-direction: row; }
-  .nav button { width: auto; }
-  .nav button .soon { display: none; }
+  .nav button, .nav .sub button { width: auto; padding-left: 12px; }
   .main { overflow: visible; }
-  .main-inner { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpi.lead, .kpi.split { grid-column: 1 / -1; }
-  .ins-grid { grid-template-columns: minmax(0, 1fr); }
-  h1 { font-size: 22px; }
-  .head-tools, .search, .search input { width: 100%; }
+  .page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .head > div { min-width: 0; }
-  .toolbar > div { min-width: 0; }
-  .chart { overflow-x: auto; }
-  .chart svg { min-width: 520px; }
+  .grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "total" "open" "trend" "days" "speed" "returns" "partners" "waiting"; }
+  .wlist button { grid-template-columns: minmax(0, 1fr) 70px; }
+  .wlist .st, .wlist .amt { display: none; }
+  .filters .q input, .filters select { width: 100%; max-width: 100%; }
+  .filters label { flex: 1 1 140px; }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .drawer { transition: transform .2s ease; }
-}
+@media (prefers-reduced-motion: no-preference) { .drawer { transition: transform .2s ease; } }
 </style>
 <!--HEAD-END-->
 </head>
 <body>
 <!--BODY-START-->
 <div class="app">
-  <aside class="side" aria-label="Navigasi">
+  <aside class="side" aria-label="Navigation">
     <div class="brand">
-      <div class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18V9M12 18V5M18 18v-6"/></svg>
-      </div>
-      <div><b>Paid Monitor</b><span>Invoice Outbound &amp; Inbound</span></div>
+      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M6 18V9M12 18V5M18 18v-6"/></svg></div>
+      <div><b>Paid Monitor</b><span>Outbound &amp; Inbound invoices</span></div>
     </div>
     <div class="nav-scroll">
-      <div class="nav-label">Monitoring</div>
+      <div class="nav-label">Overview</div>
       <nav class="nav">
-        <button data-nav="all" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard Paid</button>
-        <button data-nav="ret"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Return &amp; Resubmit<span class="count" id="cnt-ret">0</span></button>
+        <button data-go="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>KPI Dashboard</button>
       </nav>
-      <div class="nav-label">Invoice</div>
+      <div class="nav-label">Invoice data</div>
       <nav class="nav">
-        <button data-nav="Outbound"><svg viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>Paid Outbound<span class="count" id="cnt-out">0</span></button>
-        <button data-nav="Inbound"><svg viewBox="0 0 24 24"><path d="M17 7 7 17"/><path d="M16 17H7V8"/></svg>Paid Inbound<span class="count" id="cnt-in">0</span></button>
-        <button data-soon="Aging Invoice"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Aging Invoice<span class="soon">Segera</span></button>
-      </nav>
-      <div class="nav-label">Master Data</div>
-      <nav class="nav">
-        <button data-soon="Partner / Mitra"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14c2 .8 3 2.8 3 6"/></svg>Partner / Mitra<span class="soon">Segera</span></button>
-        <button data-soon="Laporan Bulanan"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Laporan Bulanan<span class="soon">Segera</span></button>
-        <button data-soon="Pengaturan"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Pengaturan<span class="soon">Segera</span></button>
+        <button data-go="all"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>All invoices<span class="count" id="c-all"></span></button>
+        <div class="sub nav">
+          <button data-go="outbound">Outbound<span class="count" id="c-out"></span></button>
+          <button data-go="inbound">Inbound · Project Delta<span class="count" id="c-in"></span></button>
+          <button data-go="returned">Returned<span class="count" id="c-ret"></span></button>
+          <button data-go="review">In review<span class="count" id="c-rev"></span></button>
+        </div>
       </nav>
     </div>
-    <div class="side-foot">Sumber: Report Status Invoice Paid &amp; Database Project Outbound (rev. 5). Update 16-Okt-26.</div>
+    <div class="side-foot" id="source"></div>
   </aside>
 
   <main class="main" id="main">
-    <div class="main-inner">
+    <!-- KPI dashboard -->
+    <section class="page" id="v-dash">
       <header class="head">
         <div>
-          <div class="eyebrow">Report Status Invoice Paid</div>
-          <h1>Dashboard Paid Monthly Outbound &amp; Inbound</h1>
-          <div class="sub" id="sub"></div>
+          <h1>Paid Monthly · Outbound &amp; Inbound</h1>
+          <div class="sub" id="d-sub"></div>
         </div>
-        <div class="head-tools">
-          <label class="search">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input id="q" type="search" placeholder="Cari partner, deskripsi, no. invoice" aria-label="Cari invoice">
-          </label>
-          <button class="theme-btn" id="theme" type="button" aria-pressed="false"></button>
+        <div class="tools">
+          <div class="periods" id="periods" role="tablist" aria-label="Period"></div>
+          <button class="ghost-btn theme-btn" type="button"></button>
         </div>
       </header>
-
-      <div class="months" role="tablist" aria-label="Pilih bulan">
-        <span class="yr">2026</span>
-        <div class="mchips" id="months"></div>
+      <div class="grid">
+        <article class="tile" style="grid-area:total" id="t-total"></article>
+        <article class="tile trend-t" style="grid-area:trend" id="t-trend"></article>
+        <article class="tile" style="grid-area:open" id="t-open"></article>
+        <article class="tile" style="grid-area:days" id="t-days"></article>
+        <article class="tile" style="grid-area:speed" id="t-speed"></article>
+        <article class="tile" style="grid-area:returns" id="t-returns"></article>
+        <article class="tile" style="grid-area:partners" id="t-partners"></article>
+        <article class="tile" style="grid-area:waiting" id="t-waiting"></article>
       </div>
+    </section>
 
-      <section class="kpis" id="kpis"></section>
-
-      <section class="card insights">
-        <div class="ins-h">
-          <div><h2 id="ins-title">Ringkasan analisis</h2><p>Temuan utama dari invoice paid bulan terpilih, dihitung otomatis dari data.</p></div>
+    <!-- Invoice table -->
+    <section class="page" id="v-table" hidden>
+      <header class="head">
+        <div>
+          <h1 id="tb-title">All invoices</h1>
+          <div class="sub">Every order in the source file. Click a row to see its full timeline.</div>
         </div>
-        <div class="ins-grid" id="ins"></div>
-        <div class="ins-foot" id="ins-foot"></div>
-      </section>
-
-      <section class="panels">
-        <div class="card">
-          <div class="card-h">
-            <div><h2 id="stage-title">Ke mana waktu habis?</h2><p>Rata-rata hari kalender per invoice, dari Submit Invoice sampai Paid</p></div>
-            <div class="legend">
-              <span><i style="background:var(--s1)"></i>Review dokumen</span>
-              <span><i style="background:var(--s2)"></i>Revisi partner</span>
-              <span><i style="background:var(--s3)"></i>Menuju paid</span>
-            </div>
-          </div>
-          <div class="chart" id="chart-stage"></div>
-        </div>
-        <div class="card">
-          <div class="card-h"><div><h2 id="partner-title">Nilai paid per partner</h2><p>BAST Value bulan terpilih</p></div></div>
-          <div class="chart" id="chart-partner"></div>
-        </div>
-      </section>
-
+        <div class="tools"><button class="ghost-btn theme-btn" type="button"></button></div>
+      </header>
+      <div class="filters">
+        <label class="q">Search<input id="f-q" type="search" placeholder="Partner, description, invoice no."></label>
+        <label>Type<select id="f-kind">
+          <option value="all">All types</option>
+          <option value="outbound">Outbound (all)</option>
+          <option value="out-xc">Outbound · Cross Connect</option>
+          <option value="out-colo">Outbound · Colocation</option>
+          <option value="inbound">Inbound · Project Delta</option>
+        </select></label>
+        <label>Partner<select id="f-partner"></select></label>
+        <label>Status<select id="f-status">
+          <option value="all">All statuses</option>
+          <option value="paid">Paid</option>
+          <option value="review">In review</option>
+          <option value="returned">Returned</option>
+        </select></label>
+        <label>Paid month<select id="f-month"></select></label>
+        <span class="grow"></span>
+        <button class="ghost-btn" type="button" id="f-reset">Reset filters</button>
+      </div>
+      <div class="summary" id="tb-sum"></div>
       <section class="card">
-        <div class="toolbar">
-          <div><h2 id="tbl-title">Invoice Paid</h2><p>Return ke-n dan Resubmit ke-n sejajar dalam satu baris. Klik baris untuk melihat timeline lengkap.</p></div>
-          <div class="seg" id="seg" role="tablist" aria-label="Jenis invoice"></div>
-        </div>
-        <div class="tlegend legend">
-          <span><i style="background:var(--s1)"></i>Review dokumen</span>
-          <span><i style="background:var(--s2)"></i>Revisi partner</span>
-          <span><i style="background:var(--s3)"></i>Menuju paid</span>
-          <span><i class="ring" style="border-color:var(--ink-2)"></i>Submit</span>
-          <span><i class="dot" style="background:var(--s2)"></i>Return</span>
-          <span><i class="ring" style="border-color:var(--s1)"></i>Resubmit</span>
-          <span><i class="dot" style="background:var(--good)"></i>Paid</span>
-        </div>
-        <div id="tbl"></div>
+        <div class="tbl-wrap" id="tb"></div>
+        <div class="pager" id="pager"></div>
       </section>
-    </div>
+    </section>
   </main>
 </div>
 
 <div class="tip" id="tip" hidden></div>
 <div class="scrim" id="scrim" hidden></div>
-<aside class="drawer" id="drawer" hidden aria-label="Detail invoice"></aside>
+<aside class="drawer" id="drawer" hidden aria-label="Invoice details"></aside>
 
+<script src="data.js"></script>
 <script>
-/* =====================================================================
-   DATA — tambah baris baru di sini. Bulan dashboard ditentukan dari "paid".
-   Format tanggal: YYYY-MM-DD.
-   cycles = siklus Return -> Resubmit, berurutan: [["return ke-1", "resubmit ke-1"], ["return ke-2", "resubmit ke-2"], ...]
-            isi null bila tanggal resubmit belum tercatat. Kosongkan [] bila tidak pernah di-return.
-   dummy: true = tanggal Return/Resubmit masih data contoh.
-   ===================================================================== */
-const DATA = [
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan 2 x PDU Rack Standard Local Brand Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 19000000, invNo: "128/VMP-INV/FA/V/2026", submit: "2026-02-12", status: "Paid",
-    cycles: [["2026-06-08", "2026-06-15"], ["2026-07-10", "2026-08-10"], ["2026-08-11", "2026-09-17"]], paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte MMR B To Rack NPCT1 SH Room L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1400000, invNo: "196/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
-    cycles: [["2026-08-05", "2026-09-15"]], paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Telkom MMRA GF to Bukopin GF Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1700000, invNo: "194/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
-    cycles: [["2026-07-23", "2026-07-23"], ["2026-08-05", "2026-09-15"]], paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Iforte To Sigma Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1800000, invNo: "197/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
-    cycles: [["2026-09-04", "2026-09-17"]], paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XL MMR A L2 To Cage Jalin L2 Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 2700000, invNo: "193/VMP-INV/FA/VII/2026", submit: "2026-07-03", status: "Paid",
-    cycles: [["2026-08-05", "2026-08-10"], ["2026-08-11", "2026-09-15"]], paid: "2026-09-24" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan Project XC Telkom To OJK Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1800000, invNo: "199/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid",
-    cycles: [["2026-08-05", "2026-09-15"]], paid: "2026-09-25" },
-  { seg: "Outbound", type: "Outbound", scope: "Cross Connect", desc: "Pengadaan XC Lintas To MNC Data Center DC Sentul", partner: "PT Visi Maine Perkasa", value: 1600000, invNo: "200/VMP-INV/FA/VII/2026", submit: "2026-07-23", status: "Paid",
-    cycles: [["2026-08-05", "2026-09-15"]], paid: "2026-09-25" },
-  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Pengadaan Barang dan Jasa Dedicated Colocation Space 4 Rack DC Sentul", partner: "PT DKSH Market Expansion", value: 380000000, invNo: "4200026008", submit: "2026-05-21", status: "Paid",
-    cycles: [["2026-05-26", "2026-07-30"], ["2026-08-06", "2026-09-28"]], paid: "2026-09-28" },
-  { seg: "Outbound", type: "Outbound", scope: "Colocation", desc: "Working Room L1 DC STL", partner: "PT Gemilang Semesta Utama", value: 161530000, invNo: "021/NV-GMT/VII/2026", submit: "2026-07-30", status: "Paid",
-    cycles: [["2026-08-20", "2026-09-17"], ["2026-09-18", "2026-09-22"], ["2026-09-29", "2026-09-29"]], paid: "2026-09-29" },
-  { seg: "Inbound", type: "Project Delta", scope: "CX Consultant", desc: "Termin ke-1 (Sep 2025 - Maret 2026) Cx Consultant", partner: "Commtech (Asia) Limited", value: 3024040000, invNo: "CMIDO2607056", submit: "2026-07-13", status: "Paid",
-    cycles: [["2026-07-28", "2026-09-05"]], paid: "2026-09-15", dummy: true },
-  { seg: "Inbound", type: "Project Delta", scope: "General Contractor", desc: "General Contractor MATERIALS For Project Delta Level 3 And 4 Fit Out Work - Main Long Lead Equipment Arrival on Site - LLEC 9", partner: "PT Huawei Tech Investment", value: 2157840000, invNo: "PT2609125", submit: "2026-05-21", status: "Paid",
-    cycles: [["2026-06-05", "2026-06-26"], ["2026-07-14", "2026-09-17"]], paid: "2026-09-28", dummy: true },
-];
-
+/* ===================================================================
+   Data comes from data.js (built by tools/build_data.py from the xlsx).
+   Inbound = Type of Work "Project Delta"; Outbound = "Outbound".
+   =================================================================== */
+const SRC = window.PAYMENT_DATA;
 const YEAR = 2026;
-const TODAY = "2026-10-16";
-const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const MSH = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
-const STAGE = {
-  rev: { name: "Review dokumen", col: "var(--s1)" },
-  fix: { name: "Revisi partner", col: "var(--s2)" },
-  pay: { name: "Menuju paid", col: "var(--s3)" },
+const MS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const STATUS = { paid: "Paid", review: "In review", returned: "Returned" };
+const ICON_ST = {
+  paid: `<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>`,
+  review: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>`,
+  returned: `<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>`,
 };
 
-const state = { month: 8, seg: "all", onlyRet: false, q: "", sel: null, dark: false };
-try {
-  const m = localStorage.getItem("pm-month"); if (m !== null && +m >= 0 && +m < 12) state.month = +m;
-  state.dark = localStorage.getItem("pm-theme") === "dark";
-} catch (e) {}
-
-/* ---------- helpers ---------- */
 const D = s => new Date(s + "T00:00:00");
+const NOW = (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
+const TODAY = NOW.getFullYear() + "-" + String(NOW.getMonth() + 1).padStart(2, "0") + "-" + String(NOW.getDate()).padStart(2, "0");
 const days = (a, b) => Math.round((D(b) - D(a)) / 864e5);
-const fmtD = s => { const d = D(s); return String(d.getDate()).padStart(2, "0") + "-" + MSH[d.getMonth()] + "-" + String(d.getFullYear()).slice(2); };
-const rp = n => "Rp" + Math.round(n).toLocaleString("id-ID");
-const rpShort = n => n >= 1e9 ? "Rp" + (n / 1e9).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " M"
-  : n >= 1e6 ? "Rp" + (n / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + " jt" : rp(n);
-const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtD = s => { if (!s) return "—"; const d = D(s); return d.getDate() + " " + MS[d.getMonth()] + " " + d.getFullYear(); };
+const rp = n => "Rp " + Math.round(n).toLocaleString("en-US");
+const rpS = n => {
+  const a = Math.abs(n);
+  if (a >= 1e9) return "Rp " + (n / 1e9).toFixed(a >= 1e11 ? 0 : a >= 1e10 ? 1 : 2) + "B";
+  if (a >= 1e6) return "Rp " + (n / 1e6).toFixed(a >= 1e8 ? 0 : 1) + "M";
+  if (a >= 1e3) return "Rp " + (n / 1e3).toFixed(0) + "K";
+  return rp(n);
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
 const avg = (a, f) => a.length ? sum(a, f) / a.length : 0;
+const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const $ = id => document.getElementById(id);
+const chip = st => `<span class="chip ${st}">${ICON_ST[st] || ""}${STATUS[st] || esc(st)}</span>`;
 
-/* Bangun urutan kejadian + segmen tahap untuk satu invoice.
-   rev: submit/resubmit -> return berikutnya, fix: return -> resubmit, pay: (re)submit terakhir -> paid */
-function build(r) {
-  const ev = [{ l: "Submit Invoice", d: r.submit, t: "submit" }];
-  const segs = [];
-  const multi = r.cycles.length > 1;
-  let prev = r.submit;
-  r.cycles.forEach(([ret, res], i) => {
-    const n = multi ? " ke-" + (i + 1) : "";
-    segs.push({ a: prev, b: ret, k: "rev" });
-    ev.push({ l: "Return" + n, d: ret, t: "ret" });
-    if (res) {
-      segs.push({ a: ret, b: res, k: "fix" });
-      ev.push({ l: "Resubmit" + n, d: res, t: "res" });
-      prev = res;
-    } else {
-      ev.push({ l: "Resubmit" + n, d: null, t: "miss" });
-      const nx = r.cycles[i + 1];
-      if (nx) { segs.push({ a: ret, b: nx[0], k: "fix", gap: true }); prev = nx[0]; }
-      else prev = ret;
-    }
-  });
-  segs.push({ a: prev, b: r.paid, k: "pay" });
-  ev.push({ l: "Paid", d: r.paid, t: "paid" });
-  const st = { rev: 0, fix: 0, pay: 0 };
-  segs.forEach(s => st[s.k] += days(s.a, s.b));
-  st.total = days(r.submit, r.paid);
-  st.lastFrom = prev;
-  return { ev, segs, st };
-}
-DATA.forEach(r => Object.assign(r, build(r)));
+const ORDERS = SRC.orders.map(o => ({
+  ...o,
+  seg: o.work === "Project Delta" ? "Inbound" : "Outbound",
+  lead: o.paid ? days(o.submit, o.paid) : null,          // submit -> paid
+  waiting: o.paid ? null : days(o.submit, TODAY),        // still open: days since submit
+}));
+const SEGS = [
+  { k: "Outbound", label: "Outbound", col: "var(--out)" },
+  { k: "Inbound", label: "Inbound · Project Delta", col: "var(--in)" },
+];
 
-const inMonth = (r, m) => { const d = D(r.paid); return d.getFullYear() === YEAR && d.getMonth() === m; };
-const monthRows = m => DATA.filter(r => inMonth(r, m));
-const segRows = rows => state.seg === "all" ? rows : rows.filter(r => r.seg === state.seg);
-const viewRows = () => {
-  let rows = segRows(monthRows(state.month));
-  if (state.onlyRet) rows = rows.filter(r => r.cycles.length);
-  const q = state.q.trim().toLowerCase();
-  if (q) rows = rows.filter(r => (r.desc + " " + r.partner + " " + r.invNo + " " + r.scope).toLowerCase().includes(q));
-  return rows;
+/* ---------- state ---------- */
+const state = {
+  view: "dash", nav: "dash", period: "year", trendMode: "value", dark: false,
+  f: { q: "", kind: "all", partner: "all", status: "all", month: "all", hist: false },
+  sort: { key: "submit", dir: -1 }, page: 0,
 };
-const lastDay = m => new Date(YEAR, m + 1, 0).getDate();
+try {
+  const p = localStorage.getItem("pm2-period"); if (p !== null) state.period = p === "year" ? "year" : +p;
+  state.dark = localStorage.getItem("pm2-theme") === "dark";
+} catch (e) {}
+const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+const inPeriod = o => {
+  if (o.status !== "paid" || !o.paid) return false;
+  const d = D(o.paid);
+  return d.getFullYear() === YEAR && (state.period === "year" || d.getMonth() === state.period);
+};
+const periodName = () => state.period === "year" ? String(YEAR) : MONTHS[state.period] + " " + YEAR;
 
 /* ---------- theme ---------- */
 function applyTheme() {
   document.documentElement.classList.toggle("dark", state.dark);
-  const b = $("theme");
-  b.setAttribute("aria-pressed", state.dark);
-  b.innerHTML = state.dark
-    ? `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Mode terang`
-    : `<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Mode gelap`;
-}
-
-/* ---------- months ---------- */
-function renderMonths() {
-  const today = D(TODAY);
-  $("months").innerHTML = MONTHS.map((n, i) => {
-    const has = monthRows(i).length > 0;
-    const future = new Date(YEAR, i, 1) > today;
-    return `<button class="mchip${i === state.month ? " on" : ""}${has ? " has" : ""}${future ? " future" : ""}" role="tab" aria-selected="${i === state.month}" data-m="${i}" data-tip="${esc(n + " " + YEAR + (has ? " · " + monthRows(i).length + " invoice paid" : future ? " · periode belum berjalan" : " · belum ada data"))}">${MSH[i]}</button>`;
-  }).join("");
-}
-
-/* ---------- header + KPI ---------- */
-function renderHead() {
-  const m = state.month;
-  $("sub").innerHTML = `Paid <b>${MONTHS[m]} ${YEAR}</b> · Period cut off <b>${lastDay(m)} ${MONTHS[m]} ${YEAR}</b>`;
-  const all = monthRows(m);
-  $("cnt-out").textContent = all.filter(r => r.seg === "Outbound").length;
-  $("cnt-in").textContent = all.filter(r => r.seg === "Inbound").length;
-  $("cnt-ret").textContent = all.filter(r => r.cycles.length).length;
-}
-
-function renderKpis() {
-  const all = monthRows(state.month);
-  const rows = segRows(all);
-  const out = all.filter(r => r.seg === "Outbound"), inn = all.filter(r => r.seg === "Inbound");
-  const tot = sum(all, r => r.value), vo = sum(out, r => r.value), vi = sum(inn, r => r.value);
-  const segs = ["Outbound", "Inbound"].filter(g => state.seg === "all" || state.seg === g);
-  const split = (head, cell) => `<div class="kpi split">
-      <div class="k">${head}</div>
-      <div class="pair">${segs.map(g => {
-        const gr = all.filter(r => r.seg === g);
-        return `<div><span class="sl">${g}${gr.some(r => r.dummy) ? ' <span class="dummy">Dummy</span>' : ""}</span>${gr.length ? cell(gr) : '<div class="v">–</div><div class="n">Tidak ada invoice</div>'}</div>`;
-      }).join("")}</div>
-    </div>`;
-  $("kpis").innerHTML = `
-    <div class="kpi lead">
-      <div class="k">Total Paid · ${MONTHS[state.month]}</div>
-      <div class="v">${rp(tot)}</div>
-      <div class="n"><b>${all.length}</b> invoice paid</div>
-    </div>
-    <div class="kpi">
-      <div class="k">Paid Outbound</div>
-      <div class="v">${rp(vo)}</div>
-      <div class="n"><b>${out.length}</b> invoice · ${pct(vo, tot)}% nilai</div>
-    </div>
-    <div class="kpi">
-      <div class="k">Paid Inbound</div>
-      <div class="v">${rp(vi)}</div>
-      <div class="n"><b>${inn.length}</b> invoice · ${tot ? 100 - pct(vo, tot) : 0}% nilai</div>
-    </div>
-    ${split(`<i style="background:var(--s2)"></i>Total return`, gr => `<div class="v">${sum(gr, r => r.cycles.length)} kali</div>
-      <div class="n"><b>${gr.filter(r => r.cycles.length).length} dari ${gr.length}</b> invoice di-return</div>`)}
-    ${split("Rata-rata Submit → Paid", gr => { const so = gr.slice().sort((x, y) => x.st.total - y.st.total);
-      return `<div class="v">${Math.round(avg(gr, r => r.st.total))} hari</div>
-      <div class="n">${so.length > 1 ? `Rentang <b>${so[0].st.total}–${so[so.length - 1].st.total} h</b> · ${so.length} invoice` : `1 invoice`}</div>`; })}`;
-}
-
-/* ---------- insights ---------- */
-const ICON = {
-  money: `<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>`,
-  ret: `<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>`,
-  clock: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
-  check: `<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>`,
-  slow: `<svg viewBox="0 0 24 24"><path d="M3 17h18"/><path d="M6 17V9M11 17V5M16 17v-6"/></svg>`,
-  warn: `<svg viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg>`,
-};
-function renderInsights() {
-  const all = monthRows(state.month);
-  const rows = segRows(all);
-  const label = state.seg === "all" ? "" : " " + state.seg;
-  $("ins-title").textContent = `Ringkasan analisis${label} · ${MONTHS[state.month]} ${YEAR}`;
-  if (!rows.length) {
-    $("ins").innerHTML = `<div class="ins" style="grid-column:1/-1"><div class="ic">${ICON.clock}</div><div><h3>Belum ada invoice paid</h3><p>Pilih bulan bertanda titik merah, atau tambahkan data paid untuk ${MONTHS[state.month]} ${YEAR}.</p></div></div>`;
-    $("ins-foot").textContent = "";
-    return;
-  }
-  const items = [];
-  const tot = sum(rows, r => r.value);
-
-  // 1. Konsentrasi nilai
-  const byP = {};
-  rows.forEach(r => byP[r.partner] = (byP[r.partner] || 0) + r.value);
-  const ps = Object.entries(byP).sort((a, b) => b[1] - a[1]);
-  if (state.seg === "all") {
-    const vi = sum(rows.filter(r => r.seg === "Inbound"), r => r.value), vo = tot - vi;
-    const big = vi >= vo ? "Inbound" : "Outbound";
-    const bigV = Math.max(vi, vo), bigN = rows.filter(r => r.seg === big).length;
-    items.push({ ic: "money", c: "", tag: "Nilai", h: `${pct(bigV, tot)}% nilai paid berasal dari ${big}`,
-      p: `<b>${rpShort(bigV)}</b> dari ${bigN} invoice. Partner terbesar: <b>${esc(ps[0][0])}</b> (${pct(ps[0][1], tot)}%).` });
-  } else {
-    items.push({ ic: "money", c: "", tag: "Nilai", h: `${esc(ps[0][0])} menyumbang ${pct(ps[0][1], tot)}% nilai`,
-      p: `${rpShort(ps[0][1])} dari total <b>${rpShort(tot)}</b> (${rows.length} invoice, ${ps.length} partner).` });
-  }
-
-  // 2. Return — dipisah per Outbound / Inbound
-  const groups = ["Outbound", "Inbound"].map(g => ({ g, rows: rows.filter(r => r.seg === g) })).filter(x => x.rows.length);
-  const gName = x => `<b>${x.g}</b>${x.rows.some(r => r.dummy) ? " (dummy)" : ""}`;
-  const retRows = rows.filter(r => r.cycles.length);
-  const totRet = sum(rows, r => r.cycles.length);
-  const maxC = Math.max(...rows.map(r => r.cycles.length));
-  const most = rows.filter(r => r.cycles.length === maxC && maxC > 0);
-  items.push({ ic: "ret", c: "orange", tag: "Return",
-    h: retRows.length === rows.length ? `Semua invoice sempat di-return, total ${totRet} kali` : `${retRows.length} dari ${rows.length} invoice sempat di-return, total ${totRet} kali`,
-    p: `<ul>${groups.map(x => {
-          const n = x.rows.filter(r => r.cycles.length).length;
-          return `<li>${gName(x)}: <b>${sum(x.rows, r => r.cycles.length)} kali</b> return, ${n === x.rows.length ? "semua" : n + " dari"} ${x.rows.length} invoice di-return</li>`;
-        }).join("")}</ul>` +
-      (maxC > 0 ? `<span class="sub-h">Paling sering di-return (${maxC}× per invoice):</span><ul>${most.map(r => `<li><b>${esc(r.desc)}</b> · ${esc(r.partner)}</li>`).join("")}</ul>` : "") });
-
-  // 3. Tahap terlama — rata-rata hari per invoice, per Outbound / Inbound
-  const KEYS = ["rev", "fix", "pay"];
-  groups.forEach(x => { x.a = {}; KEYS.forEach(k => x.a[k] = avg(x.rows, r => r.st[k])); x.top = KEYS.slice().sort((p, q) => x.a[q] - x.a[p])[0]; });
-  const sameTop = groups.every(x => x.top === groups[0].top);
-  const a = { pay: avg(rows, r => r.st.pay) };
-  items.push({ ic: "clock", c: groups[0].top === "rev" ? "blue" : groups[0].top === "fix" ? "orange" : "aqua", tag: "Waktu",
-    h: sameTop ? `${groups.map(x => x.g).join(" & ")}: waktu terlama di ${STAGE[groups[0].top].name.toLowerCase()}`
-               : groups.map(x => `${x.g} terlama di ${STAGE[x.top].name.toLowerCase()}`).join(", "),
-    p: `Lama Submit → Paid dibagi 3 tahap. Angka di bawah adalah rata-rata hari untuk satu invoice:<ul>${groups.map(x => {
-          const order = KEYS.slice().sort((p, q) => x.a[q] - x.a[p]);
-          return `<li>${gName(x)}, ${x.rows.length} invoice: <span class="stgs">${order.map((k, i) => `<span class="stg"><i class="sq" style="background:${STAGE[k].col}"></i>${STAGE[k].name} ${i === 0 ? `<b>${Math.round(x.a[k])} hari</b>` : Math.round(x.a[k]) + " hari"}</span>`).join("")}</span></li>`;
-        }).join("")}</ul>` });
-
-  // 4. Setelah resubmit terakhir
-  const pays = rows.map(r => ({ r, d: r.st.pay })).sort((x, y) => x.d - y.d);
-  items.push({ ic: "check", c: "aqua", tag: "Pembayaran",
-    h: `Paid rata-rata ${Math.round(a.pay)} hari setelah dokumen terakhir masuk`,
-    p: `<ul>${groups.map(x => `<li>${gName(x)}: rata-rata <b>${Math.round(x.a.pay)} hari</b></li>`).join("")}</ul>Tercepat ${pays[0].d} hari (${esc(pays[0].r.partner)}), terlama ${pays[pays.length - 1].d} hari (${esc(pays[pays.length - 1].r.partner)}${pays[pays.length - 1].r.dummy ? ", dummy" : ""}).` });
-
-  // 5. Invoice terlama
-  const lon = rows.slice().sort((x, y) => y.st.total - x.st.total)[0];
-  items.push({ ic: "slow", c: "", tag: "Terlama",
-    h: `Invoice terlama: ${lon.st.total} hari dari submit sampai paid`,
-    p: `<b>${esc(lon.desc)}</b> · ${esc(lon.partner)} (${lon.seg}). Submit ${fmtD(lon.submit)}, paid ${fmtD(lon.paid)}, ${lon.cycles.length}× return.<ul>${groups.map(x => `<li>Rata-rata ${gName(x)}: ${Math.round(avg(x.rows, r => r.st.total))} hari</li>`).join("")}</ul>` });
-
-  // 6. Data perlu dicek
-  const missing = [];
-  rows.forEach(r => r.cycles.forEach(([ret, res], i) => { if (!res) missing.push({ r, i, ret }); }));
-  const dummies = rows.filter(r => r.dummy);
-  if (missing.length) {
-    items.push({ ic: "warn", c: "warn", tag: "Perlu dicek",
-      h: `${missing.length} return belum punya tanggal resubmit`,
-      p: missing.map(m => `<b>${esc(m.r.partner)}</b> return ke-${m.i + 1} (${fmtD(m.ret)})`).join(", ") + ". Lengkapi di Database Project Outbound." });
-  } else if (dummies.length) {
-    items.push({ ic: "warn", c: "warn", tag: "Perlu dicek",
-      h: `${dummies.length} invoice masih memakai tanggal dummy`,
-      p: `Return/Resubmit untuk ${dummies.map(r => `<b>${esc(r.partner)}</b>`).join(", ")} masih contoh.` });
-  } else {
-    const same = rows.filter(r => r.cycles.some(([x, y]) => y && days(x, y) === 0)).length;
-    items.push({ ic: "check", c: "aqua", tag: "Data", h: "Tanggal Return & Resubmit lengkap",
-      p: same ? `${same} invoice di-resubmit di hari yang sama dengan tanggal return.` : "Semua siklus return sudah punya tanggal resubmit." });
-  }
-
-  $("ins").innerHTML = items.map(it => `<div class="ins"><div class="ic ${it.c}">${ICON[it.ic]}</div><div><div class="tag">${it.tag}</div><h3>${it.h}</h3><div class="p">${it.p}</div></div></div>`).join("");
-  $("ins-foot").textContent = dummies.length ? `Catatan: ${dummies.length} invoice Inbound memakai tanggal Return/Resubmit dummy, jadi angka waktu yang melibatkan Inbound masih perkiraan.` : "";
-}
-
-/* ---------- charts ---------- */
-function renderStageChart() {
-  const all = monthRows(state.month);
-  const groups = ["Outbound", "Inbound"].filter(g => state.seg === "all" || state.seg === g)
-    .map(g => ({ g, rows: all.filter(r => r.seg === g) })).filter(x => x.rows.length);
-  if (!groups.length) { $("chart-stage").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; $("stage-title").textContent = "Ke mana waktu habis?"; return; }
-  const keys = ["rev", "fix", "pay"];
-  groups.forEach(x => {
-    x.a = keys.map(k => avg(x.rows, r => r.st[k]));
-    x.t = avg(x.rows, r => r.st.total);
-    x.dummy = x.rows.some(r => r.dummy);
+  document.querySelectorAll(".theme-btn").forEach(b => {
+    b.setAttribute("aria-pressed", state.dark);
+    b.innerHTML = state.dark
+      ? `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Light mode`
+      : `<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Dark mode`;
   });
-  const rows = segRows(all);
-  const ov = keys.map(k => avg(rows, r => r.st[k]));
-  const topK = keys[ov.indexOf(Math.max(...ov))];
-  $("stage-title").textContent = `Waktu terlama: ${STAGE[topK].name}`;
-  const W = 640, L = 108, R = 52, rowH = 56, top = 22;
-  const max = Math.max(...groups.map(x => x.t));
-  const step = max > 150 ? 30 : max > 60 ? 15 : 7;
-  const dmax = Math.ceil(max / step) * step || step;
-  const x = v => L + v / dmax * (W - L - R);
-  const H = top + groups.length * rowH + 4;
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rata-rata jarak per tahap">`;
-  for (let v = 0; v <= dmax; v += step) {
-    s += `<line x1="${x(v)}" x2="${x(v)}" y1="${top - 6}" y2="${H - 4}" stroke="var(--line)" stroke-width="1"/>`;
-    s += `<text x="${x(v)}" y="${top - 10}" text-anchor="middle" font-size="10.5" fill="var(--ink-3)">${v}${v === dmax ? " h" : ""}</text>`;
+}
+
+/* =================== DASHBOARD =================== */
+function renderPeriods() {
+  const has = m => ORDERS.some(o => o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === m);
+  $("periods").innerHTML =
+    `<button class="year${state.period === "year" ? " on" : ""}" data-period="year" role="tab" aria-selected="${state.period === "year"}" data-tip="Whole year ${YEAR}">${YEAR}</button>` +
+    MS.map((m, i) => `<button class="${state.period === i ? "on" : ""}${has(i) ? "" : " empty"}" data-period="${i}" role="tab" aria-selected="${state.period === i}" data-tip="${MONTHS[i]} ${YEAR}${has(i) ? "" : " · no paid invoices"}">${m}</button>`).join("");
+}
+
+function tileTotal(paid) {
+  const tot = sum(paid, o => o.value);
+  const rows = SEGS.map(s => { const g = paid.filter(o => o.seg === s.k); return { ...s, n: g.length, v: sum(g, o => o.value) }; });
+  $("t-total").innerHTML = `
+    <div class="tile-h"><h2>Total paid</h2><span class="hint">${periodName()}</span></div>
+    <div><div class="big">${rpS(tot)}</div><div class="big-sub"><b>${paid.length}</b> ${paid.length === 1 ? "invoice" : "invoices"} paid</div></div>
+    <div class="split">${rows.map(r => `
+      <div class="split-row" data-tip="${esc(`<b>${r.label}</b><br>${rp(r.v)}<br>${r.n} invoices · ${pct(r.v, tot)}% of value`)}">
+        <div class="lbl"><span><i style="background:${r.col}"></i>${r.label}</span><b>${rpS(r.v)}<em>${r.n} inv.</em></b></div>
+        <div class="meter"><span style="width:${tot ? r.v / tot * 100 : 0}%;background:${r.col}"></span></div>
+      </div>`).join("")}</div>`;
+}
+
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+}
+function tileTrend() {
+  const mode = state.trendMode;
+  const data = MS.map((_, m) => {
+    const g = ORDERS.filter(o => o.status === "paid" && o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === m);
+    const by = SEGS.map(s => { const x = g.filter(o => o.seg === s.k); return { n: x.length, v: sum(x, o => o.value) }; });
+    return { m, by, n: g.length, v: sum(g, o => o.value) };
+  });
+  const val = (d, i) => mode === "value" ? d.by[i].v : d.by[i].n;
+  const tot = d => mode === "value" ? d.v : d.n;
+  const max = niceMax(Math.max(...data.map(tot)));
+  const W = 760, H = 250, L = 56, R = 8, T = 22, B = 26;
+  const bw = (W - L - R) / 12, x = m => L + m * bw, y = v => T + (1 - v / max) * (H - T - B);
+  const fmt = v => mode === "value" ? rpS(v).replace("Rp ", "") : String(v);
+  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Paid per month">`;
+  for (let i = 0; i <= 4; i++) {
+    const v = max * i / 4;
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${fmt(v)}</text>`;
   }
-  groups.forEach((gx, i) => {
-    const y = top + i * rowH + 6;
-    s += `<text x="0" y="${y + 13}" font-size="12.5" font-weight="700" fill="var(--ink)">${gx.g}</text>`;
-    s += `<text x="0" y="${y + 29}" font-size="11" fill="var(--ink-3)">${gx.rows.length} invoice${gx.dummy ? " · dummy" : ""}</text>`;
+  data.forEach(d => {
+    const dim = state.period !== "year" && state.period !== d.m;
+    const cx = x(d.m) + bw * .2, w = bw * .6;
+    const parts = SEGS.map((sg, i) => ({ sg, v: val(d, i) })).filter(p => p.v > 0);
     let acc = 0;
-    gx.a.forEach((v, k) => {
-      if (v <= 0) return;
-      const x0 = x(acc) + (acc > 0 ? 1 : 0), x1 = x(acc + v) - 1;
-      const tip = `<b>${gx.g} · ${STAGE[keys[k]].name}</b><br>Rata-rata ${Math.round(v)} hari (${pct(v, gx.t)}%)`;
-      s += `<rect x="${x0}" y="${y}" width="${Math.max(2, x1 - x0)}" height="18" rx="4" fill="${STAGE[keys[k]].col}" data-tip="${esc(tip)}"/>`;
-      acc += v;
+    parts.forEach((p, j) => {
+      const gap = j > 0 ? 2 : 0;
+      const yTop = y(acc + p.v), yBot = y(acc) - gap;
+      const h = Math.max(1.5, yBot - yTop);
+      const isTop = j === parts.length - 1;
+      // rounded top on the last segment only: draw rect + square-off the bottom corners
+      s += `<rect x="${cx}" y="${yBot - h}" width="${w}" height="${h}" rx="${isTop ? 4 : 0}" fill="${p.sg.col}" opacity="${dim ? .28 : 1}"/>`;
+      if (isTop && h > 4) s += `<rect x="${cx}" y="${yBot - 4}" width="${w}" height="4" fill="${p.sg.col}" opacity="${dim ? .28 : 1}"/>`;
+      acc += p.v;
     });
-    s += `<text x="${x(acc) + 8}" y="${y + 13}" font-size="12.5" font-weight="700" fill="var(--ink)">${Math.round(gx.t)} h</text>`;
-    let tx = L;
-    gx.a.forEach((v, k) => {
-      s += `<rect x="${tx}" y="${y + 26}" width="8" height="8" rx="2" fill="${STAGE[keys[k]].col}"/>`;
-      const lbl = `${STAGE[keys[k]].name} ${Math.round(v)} h`;
-      s += `<text x="${tx + 12}" y="${y + 33.5}" font-size="11" fill="var(--ink-2)">${lbl}</text>`;
-      tx += 12 + lbl.length * 6.1 + 14;
-    });
+    if (tot(d)) s += `<text x="${cx + w / 2}" y="${y(tot(d)) - 6}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)" opacity="${dim ? .4 : 1}">${fmt(tot(d))}</text>`;
+    s += `<text x="${cx + w / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" font-weight="${state.period === d.m ? 800 : 500}" fill="${state.period === d.m ? "var(--ink)" : "var(--ink-2)"}">${MS[d.m]}</text>`;
+    const tip = `<b>${MONTHS[d.m]} ${YEAR}</b><br>` + (d.n ? SEGS.map((sg, i) => `${sg.label}: ${rpS(d.by[i].v)} · ${d.by[i].n} inv.`).join("<br>") + `<br>Total: ${rp(d.v)}` : "No invoices paid") + `<br><i>Click to view this month</i>`;
+    s += `<rect x="${x(d.m)}" y="${T}" width="${bw}" height="${H - T}" fill="transparent" data-period="${d.m}" data-tip="${esc(tip)}" style="cursor:pointer"/>`;
   });
-  $("chart-stage").innerHTML = s + "</svg>";
+  s += "</svg>";
+  $("t-trend").innerHTML = `
+    <div class="tile-h"><h2>Paid per month</h2>
+      <div class="legend">${SEGS.map(sg => `<span><i style="background:${sg.col}"></i>${sg.label}</span>`).join("")}
+        <span class="seg"><button class="${mode === "value" ? "on" : ""}" data-trend="value">Value</button><button class="${mode === "count" ? "on" : ""}" data-trend="count">Invoices</button></span>
+      </div>
+    </div>
+    <div class="chart">${s}</div>`;
 }
 
-function renderPartnerChart() {
-  const rows = segRows(monthRows(state.month));
+function tileOpen() {
+  const open = ORDERS.filter(o => o.status !== "paid");
+  const ret = open.filter(o => o.status === "returned"), rev = open.filter(o => o.status === "review");
+  const oldest = open.slice().sort((a, b) => b.waiting - a.waiting)[0];
+  const t = $("t-open");
+  t.classList.toggle("alert", ret.length > 0);
+  t.innerHTML = `
+    ${ret.length ? `<span class="alert-dot" data-tip="${ret.length} invoices were returned and need action">!</span>` : ""}
+    <div class="tile-h"><h2>Not paid yet</h2><span class="hint" style="margin-right:${ret.length ? 34 : 0}px">As of ${fmtD(TODAY)}</span></div>
+    <div><div class="big">${open.length}<small>invoices</small></div><div class="big-sub"><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</div></div>
+    <div class="status-rows">
+      <button data-go="returned">${chip("returned")}<span class="val">${rpS(sum(ret, o => o.value))}</span><span class="cnt">${ret.length}</span></button>
+      <button data-go="review">${chip("review")}<span class="val">${rpS(sum(rev, o => o.value))}</span><span class="cnt">${rev.length}</span></button>
+    </div>
+    ${oldest ? `<div class="foot-note">Oldest: <b>${oldest.waiting} days</b> since submit (${esc(oldest.partner)})</div>` : ""}`;
+}
+
+function tileDays(paid) {
+  const cells = SEGS.map(s => { const g = paid.filter(o => o.seg === s.k); return { ...s, n: g.length, a: g.length ? Math.round(avg(g, o => o.lead)) : null }; });
+  $("t-days").innerHTML = `
+    <div class="tile-h"><h2>Average days to get paid</h2></div>
+    <div class="foot-note" style="margin-top:-6px">From submit invoice date to paid date</div>
+    <div class="duo">${cells.map(c => `
+      <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
+        <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
+        <div class="n">${c.n ? plural(c.n, "invoice") + " paid" : "None paid"}</div></div>`).join("")}</div>`;
+}
+
+const BUCKETS = [
+  { l: "≤ 30 days", s: "under 1 month", t: d => d <= 30 },
+  { l: "31–90 days", s: "1–3 months", t: d => d > 30 && d <= 90 },
+  { l: "91–180 days", s: "4–6 months", t: d => d > 90 && d <= 180 },
+  { l: "181–365 days", s: "7–12 months", t: d => d > 180 && d <= 365 },
+  { l: "> 365 days", s: "over 12 months", t: d => d > 365 },
+];
+function tileSpeed(paid) {
+  const rows = BUCKETS.map(b => ({ ...b, n: paid.filter(o => b.t(o.lead)).length }));
+  const max = Math.max(1, ...rows.map(r => r.n));
+  $("t-speed").innerHTML = `
+    <div class="tile-h"><h2>How fast invoices were paid</h2></div>
+    ${paid.length ? `<div class="bars">${rows.map(r => `
+      <div class="row" data-tip="${esc(`<b>${r.l}</b> (${r.s})<br>${r.n} invoices · ${pct(r.n, paid.length)}%`)}">
+        <div class="l"><b>${r.l}</b><span>${r.s}</span></div>
+        <div class="track"><span style="width:${r.n / max * 100}%"></span></div>
+        <div class="v">${r.n}<em>${pct(r.n, paid.length)}%</em></div>
+      </div>`).join("")}</div>` : `<p class="empty-note">No invoices paid in ${periodName()}.</p>`}`;
+}
+
+function tileReturns() {
+  const withR = ORDERS.filter(o => o.cycles.length);
+  const cycles = withR.flatMap(o => o.cycles);
+  const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
+  const paidR = withR.filter(o => o.paid);
+  const toPaid = paidR.map(o => { const c = o.cycles[o.cycles.length - 1]; return days(c[1] || c[0], o.paid); });
+  $("t-returns").innerHTML = `
+    <div class="tile-h"><h2>Return history</h2><button class="link" data-hist="1">See invoices →</button></div>
+    <div><div class="big">${cycles.length}<small>returns</small></div><div class="big-sub">on <b>${withR.length}</b> outbound invoices with recorded dates</div></div>
+    <div class="rstats">
+      <div><b>${fix.length ? Math.round(avg(fix, x => x)) : "–"}</b><span>avg days for the partner to fix and resubmit</span></div>
+      <div><b>${toPaid.length ? Math.round(avg(toPaid, x => x)) : "–"}</b><span>avg days from last resubmit to paid (${paidR.length} paid so far)</span></div>
+    </div>
+    <div class="foot-note">Return dates are recorded for these ${withR.length} invoices only.</div>`;
+}
+
+function tilePartners(paid) {
   const map = {};
-  rows.forEach(r => { (map[r.partner] = map[r.partner] || { v: 0, n: 0, seg: r.seg }); map[r.partner].v += r.value; map[r.partner].n++; });
-  const items = Object.entries(map).map(([p, o]) => ({ p, ...o })).sort((a, b) => b.v - a.v);
-  if (!items.length) { $("chart-partner").innerHTML = `<div class="empty" style="padding:28px">Belum ada invoice paid di bulan ini.</div>`; $("partner-title").textContent = "Nilai paid per partner"; return; }
-  const tot = sum(items, i => i.v);
-  const topN = Math.min(2, items.length), topV = sum(items.slice(0, topN), i => i.v);
-  $("partner-title").textContent = items.length > 2 ? `${topN} partner teratas = ${pct(topV, tot)}% nilai paid` : "Nilai paid per partner";
-  const W = 520, L = 176, R = 78, bh = 14, gap = 12, top = 4;
-  const max = Math.max(...items.map(i => i.v));
-  const x = v => v / max * (W - L - R);
-  const H = top + items.length * (bh + gap);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Nilai paid per partner">`;
-  items.forEach((it, i) => {
-    const y = top + i * (bh + gap);
-    const name = it.p.length > 27 ? it.p.slice(0, 26) + "…" : it.p;
-    const tip = `<b>${esc(it.p)}</b><br>${it.seg} · ${it.n} invoice<br>${rp(it.v)} (${pct(it.v, tot)}%)`;
-    s += `<text x="0" y="${y + 11}" font-size="11.5" fill="var(--ink-2)">${esc(name)}</text>`;
-    s += `<rect x="${L}" y="${y - 4}" width="${W - L}" height="${bh + 8}" fill="transparent" data-tip="${esc(tip)}"/>`;
-    s += `<rect x="${L}" y="${y}" width="${Math.max(3, x(it.v))}" height="${bh}" rx="4" fill="var(--bar)" pointer-events="none"/>`;
-    s += `<text x="${L + Math.max(3, x(it.v)) + 6}" y="${y + 11}" font-size="11.5" font-weight="700" fill="var(--ink)" pointer-events="none">${rpShort(it.v)}</text>`;
-  });
-  $("chart-partner").innerHTML = s + "</svg>";
+  paid.forEach(o => { const m = map[o.partner] = map[o.partner] || { p: o.partner, v: 0, n: 0, seg: o.seg }; m.v += o.value; m.n++; });
+  const list = Object.values(map).sort((a, b) => b.v - a.v);
+  const top = list.slice(0, 8), max = top.length ? top[0].v : 1, tot = sum(list, x => x.v);
+  $("t-partners").innerHTML = `
+    <div class="tile-h"><h2>Top partners by paid value</h2><span class="hint">${list.length} partners</span></div>
+    ${top.length ? `<div class="plist">${top.map(x => `
+      <button data-partner="${esc(x.p)}" data-tip="${esc(`<b>${x.p}</b><br>${rp(x.v)} · ${pct(x.v, tot)}% of total<br>${x.n} invoices paid<br><i>Click to see the invoices</i>`)}">
+        <div class="top"><span>${esc(x.p)}</span><b>${rpS(x.v)}</b></div>
+        <div class="meter"><span style="width:${x.v / max * 100}%;background:${x.seg === "Inbound" ? "var(--in)" : "var(--out)"}"></span></div>
+        <div class="meta"><span>${x.seg}</span><span>${x.n} inv. · ${pct(x.v, tot)}%</span></div>
+      </button>`).join("")}</div>` : `<p class="empty-note">No invoices paid in ${periodName()}.</p>`}`;
 }
 
-/* ---------- table ---------- */
-const TLW = 224;
-const isoMonth = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
-function domainFor(rows) {
-  const min = rows.map(r => D(r.submit)).reduce((a, b) => a < b ? a : b);
-  const max = rows.map(r => D(r.paid)).reduce((a, b) => a > b ? a : b);
-  const a = new Date(min.getFullYear(), min.getMonth(), 1);
-  const b = new Date(max.getFullYear(), max.getMonth() + 1, 1);
-  return { a, b, x: d => 8 + (D(d) - a) / (b - a) * (TLW - 16) };
-}
-function eachMonth(dom, fn, inclusive) {
-  for (let d = new Date(dom.a); inclusive ? d <= dom.b : d < dom.b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) fn(d);
-}
-
-function tlHeader(dom) {
-  let s = `<svg width="${TLW}" height="16" viewBox="0 0 ${TLW} 16" aria-hidden="true">`;
-  const ms = []; eachMonth(dom, d => ms.push(d));
-  const every = ms.length > 10 ? 2 : 1;
-  ms.forEach((d, i) => {
-    const xx = dom.x(isoMonth(d));
-    s += `<line x1="${xx}" x2="${xx}" y1="10" y2="16" stroke="var(--ink-3)" stroke-width="1"/>`;
-    if (i % every === 0) s += `<text x="${xx + 3}" y="9" font-size="10" font-weight="600" fill="var(--ink-2)">${MSH[d.getMonth()]}</text>`;
-  });
-  return s + "</svg>";
+function tileWaiting() {
+  const open = ORDERS.filter(o => o.status !== "paid").sort((a, b) => b.waiting - a.waiting).slice(0, 4);
+  $("t-waiting").innerHTML = `
+    <div class="tile-h"><h2>Waiting longest for payment</h2><button class="link" data-go="open">See all unpaid →</button></div>
+    <div class="wlist">${open.map(o => `
+      <button data-id="${o.no}">
+        <span class="st">${chip(o.status)}</span>
+        <span class="who"><b>${esc(o.partner)}</b><span>${esc(o.desc)}</span></span>
+        <span class="amt">${rp(o.value)}</span>
+        <span class="age"><b>${o.waiting}</b><span>days waiting</span></span>
+      </button>`).join("")}</div>`;
 }
 
-function tlRow(r, dom) {
-  const x = dom.x, y = 12;
-  let s = `<svg width="${TLW}" height="24" viewBox="0 0 ${TLW} 24" role="img" aria-label="Timeline ${esc(r.invNo)}">`;
-  eachMonth(dom, d => { const xx = x(isoMonth(d)); s += `<line x1="${xx}" x2="${xx}" y1="2" y2="22" stroke="var(--line)" stroke-width="1"/>`; }, true);
-  r.segs.forEach(sg => {
-    const n = days(sg.a, sg.b);
-    if (n <= 0) return;
-    const x0 = x(sg.a) + 1, x1 = x(sg.b) - 1;
-    const tip = `<b>${STAGE[sg.k].name}</b>${sg.gap ? " (tanggal resubmit tidak tercatat)" : ""}<br>${fmtD(sg.a)} → ${fmtD(sg.b)}<br>${n} hari`;
-    s += `<rect x="${x0}" y="${y - 3}" width="${Math.max(2, x1 - x0)}" height="6" rx="3" fill="${STAGE[sg.k].col}"${sg.gap ? ' opacity=".45"' : ""}/>`;
-    s += `<rect x="${x(sg.a)}" y="0" width="${Math.max(6, x(sg.b) - x(sg.a))}" height="24" fill="transparent" data-tip="${esc(tip)}"/>`;
-  });
-  r.ev.forEach(e => {
-    if (!e.d) return;
-    const tip = esc(`<b>${e.l}</b><br>${fmtD(e.d)}`);
-    if (e.t === "submit") s += `<circle cx="${x(e.d)}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--ink-2)" stroke-width="2" data-tip="${tip}"/>`;
-    if (e.t === "ret") s += `<circle cx="${x(e.d)}" cy="${y}" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2" data-tip="${tip}"/>`;
-    if (e.t === "res") s += `<circle cx="${x(e.d)}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--s1)" stroke-width="2" data-tip="${tip}"/>`;
-    if (e.t === "paid") s += `<circle cx="${x(e.d)}" cy="${y}" r="5" fill="var(--good)" stroke="var(--surface)" stroke-width="2" data-tip="${tip}"/>`;
-  });
-  return s + "</svg>";
+function renderDash() {
+  const paid = ORDERS.filter(inPeriod);
+  $("d-sub").innerHTML = `Invoices paid in <b>${periodName()}</b>${state.period === "year" ? " · pick a month to zoom in" : ` · <button class="link" data-period="year">Back to full year</button>`}`;
+  renderPeriods(); tileTotal(paid); tileTrend(); tileOpen(); tileDays(paid); tileSpeed(paid); tileReturns(); tilePartners(paid); tileWaiting();
 }
 
-function rowHtml(r, i, dom) {
-  const st = r.st, multi = r.cycles.length > 1;
-  const dm = r.dummy ? `<span class="dummy">Dummy</span>` : "";
-  let ret = `<span class="nil">Tidak ada</span>`, res = `<span class="nil">Tidak ada</span>`;
-  if (r.cycles.length) {
-    let prev = r.submit;
-    const rl = [], sl = [];
-    r.cycles.forEach(([a, b], k) => {
-      const rk = multi ? `<span class="rk">${k + 1}</span>` : "";
-      rl.push(`<div class="ln">${rk}<b>${fmtD(a)}</b><span class="g">+${days(prev, a)} h</span></div>`);
-      if (b) { sl.push(`<div class="ln">${rk}<b>${fmtD(b)}</b><span class="g">+${days(a, b)} h</span></div>`); prev = b; }
-      else { sl.push(`<div class="ln">${rk}<span class="miss">Belum tercatat</span></div>`); prev = a; }
-    });
-    ret = `<div class="cyc">${rl.join("")}${dm}</div>`;
-    res = `<div class="cyc">${sl.join("")}${dm}</div>`;
-  }
-  const lastEv = r.ev.filter(e => e.d && e.t !== "paid").pop();
-  const paid = `<div class="cyc"><div class="ln"><b>${fmtD(r.paid)}</b><span class="g">+${st.pay} h</span></div><span class="foot">dari ${lastEv.l.toLowerCase()}</span></div>`;
-  return `<tr class="row${state.sel === r ? " sel" : ""}" tabindex="0" data-i="${DATA.indexOf(r)}">
-    <td class="no">${i + 1}</td>
-    <td class="nowrap">${esc(r.type)}</td>
-    <td class="nowrap">${esc(r.scope)}</td>
-    <td class="desc">${esc(r.desc)}</td>
-    <td class="partner">${esc(r.partner)}</td>
-    <td class="num nowrap">${rp(r.value)}</td>
-    <td class="mono nowrap">${esc(r.invNo)}</td>
-    <td class="date">${fmtD(r.submit)}</td>
-    <td><span class="pill"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>${esc(r.status)}</span></td>
-    <td>${ret}</td>
-    <td>${res}</td>
-    <td>${paid}</td>
-    <td class="tl"><div class="tl-cap"><b>${st.total} hari</b> submit → paid${r.cycles.length ? ` · ${r.cycles.length}× return` : ""}</div>${tlRow(r, dom)}</td>
-  </tr>`;
+/* =================== TABLE =================== */
+const PRESETS = {
+  all: { title: "All invoices" },
+  outbound: { title: "Outbound invoices", kind: "outbound" },
+  inbound: { title: "Inbound invoices · Project Delta", kind: "inbound" },
+  returned: { title: "Returned invoices", status: "returned" },
+  review: { title: "Invoices in review", status: "review" },
+  open: { title: "Unpaid invoices", month: "unpaid" },
+};
+function fillSelects() {
+  const partners = [...new Set(ORDERS.map(o => o.partner))].sort((a, b) => a.localeCompare(b));
+  $("f-partner").innerHTML = `<option value="all">All partners (${partners.length})</option>` + partners.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+  $("f-month").innerHTML = `<option value="all">Any</option><option value="unpaid">Not paid yet</option>` + MONTHS.map((m, i) => `<option value="${i}">${m} ${YEAR}</option>`).join("");
 }
-
+function tableRows() {
+  const f = state.f, q = f.q.trim().toLowerCase();
+  let rows = ORDERS.filter(o =>
+    (f.kind === "all" || (f.kind === "outbound" && o.seg === "Outbound") || (f.kind === "inbound" && o.seg === "Inbound") ||
+      (f.kind === "out-xc" && o.project === "Cross Connect") || (f.kind === "out-colo" && o.project === "Colocation")) &&
+    (f.partner === "all" || o.partner === f.partner) &&
+    (f.status === "all" || o.status === f.status) &&
+    (f.month === "all" || (f.month === "unpaid" ? !o.paid : (o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === +f.month))) &&
+    (!f.hist || o.cycles.length) &&
+    (!q || (o.partner + " " + o.desc + " " + o.inv + " " + o.contract).toLowerCase().includes(q)));
+  const { key, dir } = state.sort;
+  const get = { submit: o => o.submit, paid: o => o.paid || "", value: o => o.value, days: o => o.paid ? o.lead : o.waiting, no: o => o.no }[key];
+  rows.sort((a, b) => { const x = get(a), y = get(b); return (x > y ? 1 : x < y ? -1 : a.no - b.no) * dir; });
+  return rows;
+}
 function renderTable() {
-  const all = monthRows(state.month);
-  const segs = [["all", "Semua"], ["Outbound", "Outbound"], ["Inbound", "Inbound"]];
-  $("seg").innerHTML = segs.map(([k, n]) => {
-    const c = k === "all" ? all.length : all.filter(r => r.seg === k).length;
-    return `<button role="tab" aria-selected="${state.seg === k}" class="${state.seg === k ? "on" : ""}" data-seg="${k}">${n}<span class="c">${c}</span></button>`;
-  }).join("") + `<button role="tab" aria-selected="${state.onlyRet}" class="${state.onlyRet ? "on" : ""}" data-ret="1">Hanya yang di-return</button>`;
-  $("tbl-title").textContent = `Invoice Paid ${MONTHS[state.month]} ${YEAR}`;
-
-  const rows = viewRows();
-  if (!all.length) {
-    const future = new Date(YEAR, state.month, 1) > D(TODAY);
-    $("tbl").innerHTML = `<div class="empty"><b>${future ? "Periode belum berjalan" : "Belum ada data paid"}</b>${future ? `Bulan ${MONTHS[state.month]} ${YEAR} belum dimulai.` : `Tambahkan invoice dengan Paid Date di ${MONTHS[state.month]} ${YEAR} ke tabel DATA untuk menampilkannya di sini.`}</div>`;
-    return;
-  }
-  if (!rows.length) { $("tbl").innerHTML = `<div class="empty"><b>Tidak ada yang cocok</b>Ubah kata kunci pencarian atau filter.</div>`; return; }
-  const dom = domainFor(rows);
-  let h = `<div class="tbl-wrap"><table><thead><tr>
-    <th>No</th><th>Type of Work</th><th>Scope of Work</th><th>Description</th><th>Partner</th>
-    <th class="num">BAST Value</th><th>Invoice Number</th><th>Submit Invoice Date</th><th>Invoice Status</th>
-    <th class="hl" style="--hc:var(--s2)"><span>Return Date</span><small>+h dari (re)submit sebelumnya</small></th>
-    <th class="hl" style="--hc:var(--s1)"><span>Resubmit Date</span><small>+h dari return</small></th>
-    <th class="hl" style="--hc:var(--good)"><span>Paid Date</span><small>+h dari dokumen terakhir</small></th>
-    <th class="tl-h" style="white-space:nowrap">Timeline Submit → Paid<br>${tlHeader(dom)}</th>
-  </tr></thead><tbody>`;
-  ["Outbound", "Inbound"].forEach(g => {
-    const gr = rows.filter(r => r.seg === g);
-    if (!gr.length) return;
-    h += `<tr class="grp"><td colspan="13"><span class="gtag"><i></i>Paid ${g}</span><small>${gr.length} invoice${gr.some(r => r.dummy) ? " · Return &amp; Resubmit masih dummy" : ""}</small></td></tr>`;
-    gr.forEach((r, i) => h += rowHtml(r, i, dom));
-    h += `<tr class="sub"><td colspan="5">Subtotal ${g}</td><td class="num nowrap">${rp(sum(gr, r => r.value))}</td><td colspan="7"></td></tr>`;
-  });
-  h += `<tr class="total"><td colspan="5">Total</td><td class="num nowrap">${rp(sum(rows, r => r.value))}</td><td colspan="7"></td></tr>`;
-  h += `</tbody></table></div><div class="note">Kotak angka 1, 2, 3 = siklus ke-n: Return ke-n berpasangan dengan Resubmit ke-n di baris yang sama. “h” = hari kalender.${rows.some(r => r.dummy) ? " Return/Resubmit Inbound masih dummy." : ""}</div>`;
-  $("tbl").innerHTML = h;
+  const f = state.f;
+  $("f-q").value = f.q; $("f-kind").value = f.kind; $("f-partner").value = f.partner; $("f-status").value = f.status; $("f-month").value = String(f.month);
+  $("tb-title").textContent = (PRESETS[state.nav] || PRESETS.all).title;
+  const rows = tableRows();
+  const paid = rows.filter(o => o.paid);
+  $("tb-sum").innerHTML = `<span><b>${rows.length}</b>invoices</span><span><b>${rpS(sum(rows, o => o.value))}</b>total BAST value</span><span><b>${paid.length}</b>paid</span><span><b>${rows.length - paid.length}</b>not paid yet</span>` +
+    (f.hist ? `<button class="pill-x" data-hist="0">With return dates only ✕</button>` : "");
+  const PAGE = 20, pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  state.page = Math.min(state.page, pages - 1);
+  const slice = rows.slice(state.page * PAGE, state.page * PAGE + PAGE);
+  const th = (k, l, cls = "") => `<th class="sort ${cls}" data-sort="${k}">${l}${state.sort.key === k ? `<span class="dir">${state.sort.dir > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
+  if (!rows.length) { $("tb").innerHTML = `<p class="empty-note" style="padding:40px 16px;text-align:center">No invoices match these filters.</p>`; $("pager").innerHTML = ""; return; }
+  $("tb").innerHTML = `<table><thead><tr>
+      ${th("no", "No")}<th>Type of Work</th><th>Type Project</th><th>Partner</th><th>Description</th><th>Invoice Number</th>
+      ${th("value", "BAST Value", "r")}<th>Status</th>${th("submit", "Submit Date")}<th>Return Date</th><th>Resubmit Date</th>${th("paid", "Paid Date")}${th("days", "Days", "r")}
+    </tr></thead><tbody>${slice.map(o => `
+      <tr data-id="${o.no}" tabindex="0">
+        <td class="muted num">${o.no}</td>
+        <td class="nw">${o.seg}</td>
+        <td class="nw">${o.project === "-" ? "Project Delta" : esc(o.project)}</td>
+        <td class="partner">${esc(o.partner)}</td>
+        <td class="desc">${esc(o.desc)}</td>
+        <td class="mono">${esc(o.inv)}</td>
+        <td class="r nw num">${rp(o.value)}</td>
+        <td>${chip(o.status)}</td>
+        <td class="nw num">${fmtD(o.submit)}</td>
+        <td>${o.cycles.length ? `<div class="dl">${o.cycles.map(c => fmtD(c[0])).join("<br>")}</div>` : `<span class="muted">—</span>`}</td>
+        <td>${o.cycles.length ? `<div class="dl">${o.cycles.map(c => c[1] ? fmtD(c[1]) : `<span class="muted">not recorded</span>`).join("<br>")}</div>` : `<span class="muted">—</span>`}</td>
+        <td class="nw num">${o.paid ? fmtD(o.paid) : `<span class="muted">—</span>`}</td>
+        <td class="r nw num">${o.paid ? `<b>${o.lead}</b> <span class="muted">to pay</span>` : `<b>${o.waiting}</b> <span class="muted">waiting</span>`}</td>
+      </tr>`).join("")}</tbody></table>`;
+  const btn = (p, l, on) => `<button data-page="${p}"${on ? ' class="on"' : ""}${p < 0 || p >= pages ? " disabled" : ""}>${l}</button>`;
+  const nums = []; for (let p = Math.max(0, state.page - 2); p <= Math.min(pages - 1, state.page + 2); p++) nums.push(btn(p, p + 1, p === state.page));
+  $("pager").innerHTML = `<span>Showing ${state.page * PAGE + 1}–${state.page * PAGE + slice.length} of ${rows.length}</span><div class="btns">${btn(state.page - 1, "‹ Prev")}${nums.join("")}${btn(state.page + 1, "Next ›")}</div>`;
 }
 
-/* ---------- drawer ---------- */
-function openDrawer(r) {
-  state.sel = r;
-  const st = r.st;
-  const dotCol = { submit: "var(--ink-2)", ret: "var(--s2)", res: "var(--s1)", miss: "var(--warn)", paid: "var(--good)" };
-  let steps = "", lastDated = null;
-  r.ev.forEach((e, i) => {
-    if (i > 0) {
-      if (e.d && lastDated) {
-        const sg = r.segs.find(s => s.b === e.d && s.a === lastDated.d) || { k: e.t === "paid" ? "pay" : e.t === "res" ? "fix" : "rev" };
-        const g = days(lastDated.d, e.d);
-        const txt = sg.gap ? "Revisi partner (tanggal resubmit tidak tercatat)" : STAGE[sg.k].name;
-        steps += `<li class="link"><span class="bar" style="background:${STAGE[sg.k].col};min-height:${Math.min(60, 22 + g / 3)}px"></span><span class="txt"><b>+${g} hari</b> · ${txt}</span></li>`;
-      } else {
-        steps += `<li class="link"><span class="bar" style="background:var(--line)"></span><span class="txt"></span></li>`;
-      }
-    }
-    const filled = e.t === "paid" || e.t === "ret";
-    steps += `<li><span class="dot" style="border-color:${dotCol[e.t]}${filled ? ";background:" + dotCol[e.t] : ""}"></span><span class="lbl">${e.l}</span><span class="dt${e.d ? "" : " miss"}">${e.d ? fmtD(e.d) : "Belum tercatat"}</span></li>`;
-    if (e.d) lastDated = e;
+/* =================== DRAWER =================== */
+function openDrawer(o) {
+  const ev = [{ l: "Submit invoice", d: o.submit, c: "var(--ink-2)" }];
+  const multi = o.cycles.length > 1;
+  o.cycles.forEach((c, i) => {
+    const n = multi ? " #" + (i + 1) : "";
+    ev.push({ l: "Returned" + n, d: c[0], c: "var(--bad)", fill: true, gap: "In review" });
+    ev.push({ l: "Resubmitted" + n, d: c[1], c: "var(--warn)", gap: "Partner fixing documents" });
   });
-  const tot = st.rev + st.fix + st.pay || 1;
+  if (o.paid) ev.push({ l: "Paid", d: o.paid, c: "var(--good)", fill: true, gap: o.cycles.length ? "Final review to payment" : "Review to payment" });
+  else ev.push({ l: "Today · not paid yet", d: TODAY, c: "var(--ink-3)", gap: "Waiting so far" });
+  let steps = "", last = null;
+  ev.forEach((e, i) => {
+    if (i > 0) {
+      const g = e.d && last ? days(last.d, e.d) : null;
+      const col = e.gap === "Partner fixing documents" ? "var(--warn)" : e.l === "Paid" ? "var(--good)" : "var(--line)";
+      steps += `<li class="link-row"><span class="bar" style="background:${col};min-height:${g === null ? 24 : Math.min(64, 22 + g / 3)}px"></span><span class="txt">${g === null ? "Date not recorded" : `<b>${g} days</b> · ${e.gap}`}</span></li>`;
+    }
+    steps += `<li><span class="dot" style="border-color:${e.c}${e.fill ? ";background:" + e.c : ""}"></span><span class="lbl">${e.l}</span><span class="dt">${e.d ? fmtD(e.d) : "not recorded"}</span></li>`;
+    if (e.d) last = e;
+  });
   $("drawer").innerHTML = `
     <div class="dr-h">
-      <div>
-        <div class="eyebrow">${esc(r.seg)} · ${esc(r.scope)}</div>
-        <h3>${esc(r.desc)}</h3>
-        <div class="meta">${esc(r.partner)}</div>
-      </div>
-      <button class="dr-x" id="dr-x" aria-label="Tutup detail"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <div><div class="eyebrow">${o.seg === "Inbound" ? "Inbound · Project Delta" : "Outbound · " + esc(o.project)}</div>
+        <h3>${esc(o.desc)}</h3>${chip(o.status)}</div>
+      <button class="dr-x" id="dr-x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="dr-b">
       <div class="facts">
-        <div><span>BAST Value</span><b>${rp(r.value)}</b></div>
-        <div><span>Invoice Number</span><b class="mono">${esc(r.invNo)}</b></div>
-        <div><span>Submit → Paid</span><b>${st.total} hari</b></div>
-        <div><span>Jumlah return</span><b>${r.cycles.length}×</b></div>
+        <div class="wide"><span>Partner</span><b>${esc(o.partner)}</b></div>
+        <div><span>BAST Value</span><b class="num">${rp(o.value)}</b></div>
+        <div><span>${o.paid ? "Submit → Paid" : "Waiting since submit"}</span><b>${o.paid ? o.lead : o.waiting} days</b></div>
+        <div><span>Invoice Number</span><b>${esc(o.inv)}</b></div>
+        <div><span>Contract Number</span><b>${esc(o.contract)}</b></div>
       </div>
-      <div class="mix">
-        <div class="bar">${["rev", "fix", "pay"].filter(k => st[k] > 0).map(k => `<span style="flex:${st[k]};background:${STAGE[k].col}"></span>`).join("")}</div>
-        <div class="lg">${["rev", "fix", "pay"].map(k => `<span><i style="background:${STAGE[k].col}"></i>${STAGE[k].name} ${st[k]} h (${pct(st[k], tot)}%)</span>`).join("")}</div>
-      </div>
-      ${r.dummy ? `<span class="dummy">Return &amp; Resubmit dummy</span>` : ""}
       <ol class="steps">${steps}</ol>
+      ${o.cycles.length ? "" : `<p class="foot-note">No return dates recorded for this invoice.</p>`}
     </div>`;
-  $("drawer").hidden = false; $("scrim").hidden = false;
-  $("dr-x").focus();
-  renderTable();
+  $("drawer").hidden = false; $("scrim").hidden = false; $("dr-x").focus();
 }
-function closeDrawer() {
-  $("drawer").hidden = true; $("scrim").hidden = true;
-  const sel = state.sel; state.sel = null; renderTable();
-  if (sel) { const tr = document.querySelector(`tr.row[data-i="${DATA.indexOf(sel)}"]`); tr && tr.focus(); }
-}
+function closeDrawer() { $("drawer").hidden = true; $("scrim").hidden = true; }
 
-/* ---------- nav ---------- */
-function syncNav() {
-  document.querySelectorAll(".nav button[data-nav]").forEach(b => {
-    const k = b.dataset.nav;
-    const on = k === "ret" ? state.onlyRet && state.seg === "all" : !state.onlyRet && state.seg === k;
-    b.classList.toggle("active", on);
-  });
+/* =================== NAV & EVENTS =================== */
+function go(key, extra = {}) {
+  if (key === "dash") { state.view = "dash"; state.nav = "dash"; }
+  else {
+    const p = PRESETS[key] || PRESETS.all;
+    state.view = "table"; state.nav = key; state.page = 0;
+    state.f = { q: "", kind: p.kind || "all", partner: "all", status: p.status || "all", month: p.month || "all", hist: false, ...extra };
+  }
+  closeDrawer(); render(); $("main").scrollTo({ top: 0 });
 }
-
 function render() {
-  renderMonths(); renderHead(); renderKpis(); renderInsights(); renderStageChart(); renderPartnerChart(); renderTable(); syncNav();
+  $("v-dash").hidden = state.view !== "dash";
+  $("v-table").hidden = state.view !== "table";
+  document.querySelectorAll(".nav button[data-go]").forEach(b => b.classList.toggle("active", b.dataset.go === state.nav));
+  if (state.view === "dash") renderDash(); else renderTable();
 }
 
-/* ---------- events ---------- */
 document.addEventListener("click", e => {
-  if (e.target.closest("#theme")) {
-    state.dark = !state.dark; applyTheme();
-    try { localStorage.setItem("pm-theme", state.dark ? "dark" : "light"); } catch (err) {}
-    return;
-  }
-  const m = e.target.closest(".mchip");
-  if (m) { state.month = +m.dataset.m; try { localStorage.setItem("pm-month", state.month); } catch (err) {} render(); return; }
-  const sg = e.target.closest("#seg button");
-  if (sg) { if (sg.dataset.ret) state.onlyRet = !state.onlyRet; else state.seg = sg.dataset.seg; render(); return; }
-  const nv = e.target.closest(".nav button");
-  if (nv) {
-    if (nv.dataset.soon) { flash(nv, nv.dataset.soon + " belum tersedia di versi ini"); return; }
-    const k = nv.dataset.nav;
-    if (k === "ret") { state.seg = "all"; state.onlyRet = true; } else { state.seg = k; state.onlyRet = false; }
-    render(); $("main").scrollTo({ top: 0 }); return;
-  }
-  const tr = e.target.closest("tr.row");
-  if (tr) { openDrawer(DATA[+tr.dataset.i]); return; }
-  if (e.target.closest("#dr-x") || e.target.id === "scrim") closeDrawer();
+  const t = e.target;
+  if (t.closest(".theme-btn")) { state.dark = !state.dark; save("pm2-theme", state.dark ? "dark" : "light"); applyTheme(); return; }
+  const per = t.closest("[data-period]");
+  if (per) { state.period = per.dataset.period === "year" ? "year" : +per.dataset.period; save("pm2-period", state.period); state.view = "dash"; state.nav = "dash"; render(); return; }
+  const tr = t.closest("[data-trend]");
+  if (tr) { state.trendMode = tr.dataset.trend; tileTrend(); return; }
+  const g = t.closest("[data-go]");
+  if (g) { go(g.dataset.go); return; }
+  const pa = t.closest("[data-partner]");
+  if (pa) { go("all", { partner: pa.dataset.partner, status: "paid", month: state.period === "year" ? "all" : String(state.period) }); return; }
+  const hi = t.closest("[data-hist]");
+  if (hi) { if (hi.dataset.hist === "1") go("all", { hist: true }); else { state.f.hist = false; state.page = 0; renderTable(); } return; }
+  const so = t.closest("[data-sort]");
+  if (so) { const k = so.dataset.sort; state.sort = state.sort.key === k ? { key: k, dir: -state.sort.dir } : { key: k, dir: k === "no" ? 1 : -1 }; renderTable(); return; }
+  const pg = t.closest("[data-page]");
+  if (pg) { if (!pg.disabled) { state.page = +pg.dataset.page; renderTable(); } return; }
+  const row = t.closest("[data-id]");
+  if (row) { openDrawer(ORDERS.find(o => o.no === +row.dataset.id)); return; }
+  if (t.closest("#f-reset")) { go(state.nav === "dash" ? "all" : state.nav); return; }
+  if (t.closest("#dr-x") || t.id === "scrim") closeDrawer();
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("drawer").hidden) closeDrawer();
-  if (e.key === "Enter" && e.target.matches("tr.row")) openDrawer(DATA[+e.target.dataset.i]);
+  if (e.key === "Enter" && e.target.matches("tr[data-id]")) openDrawer(ORDERS.find(o => o.no === +e.target.dataset.id));
 });
-$("q").addEventListener("input", e => { state.q = e.target.value; renderTable(); });
+[["f-kind", "kind"], ["f-partner", "partner"], ["f-status", "status"], ["f-month", "month"]].forEach(([id, k]) =>
+  $(id).addEventListener("change", e => { state.f[k] = e.target.value; state.page = 0; renderTable(); }));
+$("f-q").addEventListener("input", e => { state.f.q = e.target.value; state.page = 0; renderTable(); });
 
 const tip = $("tip");
 document.addEventListener("mousemove", e => {
   const t = e.target.closest && e.target.closest("[data-tip]");
   if (!t) { tip.hidden = true; return; }
-  tip.innerHTML = t.getAttribute("data-tip");
-  tip.hidden = false;
+  tip.innerHTML = t.getAttribute("data-tip"); tip.hidden = false;
   const w = tip.offsetWidth, h = tip.offsetHeight;
   let x = e.clientX + 14, y = e.clientY + 14;
   if (x + w > innerWidth - 8) x = e.clientX - w - 14;
   if (y + h > innerHeight - 8) y = e.clientY - h - 14;
   tip.style.left = x + "px"; tip.style.top = y + "px";
 });
-let flashT;
-function flash(el, msg) {
-  const r = el.getBoundingClientRect();
-  tip.textContent = msg; tip.hidden = false;
-  tip.style.left = Math.min(r.right + 8, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = r.top + 6 + "px";
-  clearTimeout(flashT); flashT = setTimeout(() => tip.hidden = true, 1600);
-}
 
-applyTheme();
-render();
+/* counts in the sidebar */
+$("c-all").textContent = ORDERS.length;
+$("c-out").textContent = ORDERS.filter(o => o.seg === "Outbound").length;
+$("c-in").textContent = ORDERS.filter(o => o.seg === "Inbound").length;
+$("c-ret").textContent = ORDERS.filter(o => o.status === "returned").length;
+$("c-rev").textContent = ORDERS.filter(o => o.status === "review").length;
+$("source").innerHTML = `Source: ${esc(SRC.source)} · ${ORDERS.length} records`;
+
+fillSelects(); applyTheme(); render();
 </script>
 <!--BODY-END-->
 </body>

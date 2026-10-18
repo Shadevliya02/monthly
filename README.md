@@ -1,19 +1,18 @@
-# Dashboard Paid Monthly Outbound & Inbound
+# Paid Monthly Dashboard · Outbound & Inbound
 
-Dashboard web (satu file `index.html`, tanpa build) untuk memantau invoice yang sudah **Paid** per bulan, Outbound dan Inbound, Januari–Desember 2026.
+Static web dashboard (no build step for the page itself) for invoices paid in 2026. Outbound = Type of Work "Outbound"; Inbound = "Project Delta".
 
-Buka `index.html` langsung di browser.
+Open `index.html` in a browser, or deploy the folder as-is (e.g. Vercel, preset "Other").
 
-## Isi
-- Pilihan bulan Jan–Des 2026 (titik merah = bulan yang punya data paid).
-- KPI: Total Paid, Paid Outbound, Paid Inbound, total return, rata-rata hari Submit → Paid.
-- Ringkasan analisis otomatis (konsentrasi nilai, return, tahap terlama, kecepatan bayar, invoice terlama, data yang perlu dicek).
-- Grafik waktu per tahap (Review dokumen, Revisi partner, Menuju paid) dan nilai paid per partner.
-- Tabel: No, Type of Work, Scope of Work, Description, Partner, BAST Value, Invoice Number, Submit Invoice Date, Invoice Status, Return Date, Resubmit Date, Paid Date, plus kolom timeline Submit → Paid. Return ke-n dan Resubmit ke-n tampil sejajar per siklus.
-- Tema terang sebagai default, tombol Mode gelap di kanan atas.
-- Klik baris untuk detail timeline dengan jarak hari antar tahap.
+## Pages
+- **KPI Dashboard**: one-screen overview. Pick `2026` for the full year or a month to zoom in.
+  Total paid (Outbound vs Inbound), paid per month, invoices not paid yet (returned / in review),
+  average days from submit to paid, payment speed buckets, return history, top partners, and the invoices waiting longest.
+- **Invoice data**: the full list with filters (type, partner, status, paid month, search), sorting and paging.
+  Sub-menus open it pre-filtered: Outbound, Inbound, Returned, In review. Click a row for the invoice timeline.
 
-## Menambah data
-Edit array `DATA` di bagian `<script>` dalam `index.html`. Bulan tampil ditentukan dari `paid`. Format tanggal `YYYY-MM-DD`. `cycles` berisi pasangan `[return ke-n, resubmit ke-n]` berurutan; isi `null` bila resubmit belum tercatat. Set `dummy: true` bila tanggal Return/Resubmit masih contoh.
-
-Sumber data September 2026: Report Status Invoice Paid September 2026 (Outbound 9 invoice, Inbound 2 invoice) dan sheet mitra di Database Project Outbound rev. 5 (Return Date, Resubmit Date). Return/Resubmit Inbound masih dummy.
+## Updating the data
+1. Replace `data/Order_Outbound_Inbound_2026.xlsx` with the new export (sheet `Orders`, same columns).
+2. Return/resubmit dates live in `data/return_dates.json`, keyed by invoice number.
+3. Run `pip install openpyxl` once, then `python3 tools/build_data.py`. This rewrites `data.js`.
+4. Commit and push; Vercel redeploys automatically.
