@@ -14,6 +14,7 @@ import datetime
 import json
 import pathlib
 import re
+from zoneinfo import ZoneInfo
 
 import openpyxl
 
@@ -123,7 +124,7 @@ def main():
     for o in orders:
         o["cycles"] = returns.get(key(o["inv"]), [])
 
-    payload = {"source": " + ".join(sources), "built": datetime.date.today().isoformat(), "orders": orders}
+    payload = {"source": " + ".join(sources), "built": datetime.datetime.now(ZoneInfo("Asia/Jakarta")).isoformat(timespec="minutes"), "orders": orders}
     OUT.write_text("window.PAYMENT_DATA = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n")
     print(f"Wrote {OUT.name}: {len(orders)} orders, {sum(o['status'] == 'paid' for o in orders)} paid, "
           f"{sum(bool(o['cycles']) for o in orders)} with return dates")

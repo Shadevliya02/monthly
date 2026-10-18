@@ -824,7 +824,12 @@ $("c-out").textContent = ORDERS.filter(o => o.seg === "Outbound").length;
 $("c-in").textContent = ORDERS.filter(o => o.seg === "Inbound").length;
 $("c-ret").textContent = ORDERS.filter(o => o.status === "returned").length;
 $("c-rev").textContent = ORDERS.filter(o => o.status === "review").length;
-$("source").innerHTML = `Source: ${esc(SRC.source)} · ${ORDERS.length} records`;
+/* last update = when data.js was built, shown in Jakarta time as written by build_data.py */
+const lastUpdate = (() => {
+  const m = /^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}))?/.exec(SRC.built || "");
+  return m ? fmtD(m[1]) + (m[2] ? ", " + m[2] + " WIB" : "") : "—";
+})();
+$("source").innerHTML = `Last updated<br><b style="color:var(--side-ink);font-weight:600">${lastUpdate}</b>`;
 
 fillSelects(); applyTheme(); render();
 </script>
