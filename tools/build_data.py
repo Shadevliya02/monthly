@@ -5,9 +5,10 @@ Needs:  pip install openpyxl
 
 Sources (in data/):
   Order_Outbound_Inbound_2026.xlsx  base list of all orders (sheet "Orders")
-  PAID_*.xlsx                       paid updates (sheet "Orders"); applied in name order.
-                                    A row whose invoice number already exists updates that order,
-                                    otherwise it is added as a new order.
+  updates/*.xlsx                    later exports (sheet "Orders"), applied in file-name order,
+                                    so prefix them with the date (YYYY-MM-DD_...). A row whose
+                                    invoice number already exists updates that order, otherwise it
+                                    is added. Orders missing from an update file are kept.
   return_dates.json                 return/resubmit cycles keyed by invoice number
 """
 import datetime
@@ -34,7 +35,7 @@ COLS = {
     "inv": ["Invoice Number"],
     "value": ["BAST Value"],
     "status": ["Current Status", "Status Payment"],
-    "submit": ["Submit Invoice Date"],
+    "submit": ["Submit Invoice Date", "Created At"],
     "paid": ["Paid Date"],
 }
 
@@ -102,7 +103,7 @@ def main():
 
     sources = [BASE.name]
     stats = []
-    for path in sorted(DATA.glob("PAID_*.xlsx")):
+    for path in sorted((DATA / "updates").glob("*.xlsx")):
         updated = added = 0
         for u in read(path):
             u["status"] = u["status"] or "paid"

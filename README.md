@@ -13,7 +13,7 @@ Open `index.html` in a browser, or deploy the folder as-is (e.g. Vercel, preset 
 
 ## Updating the data
 - `data/Order_Outbound_Inbound_2026.xlsx`: base list of all orders (sheet `Orders`).
-- `data/PAID_*.xlsx`: paid updates (sheet `Orders`). Rows with an existing invoice number update that order; new invoice numbers are added. Orders not in the update file are kept as they are.
+- `data/updates/*.xlsx`: later exports (sheet `Orders`), applied in file-name order, so start each name with the date (`2026-10-19_...`). Rows with an existing invoice number update that order; new invoice numbers are added. Orders not in the update file are kept as they are.
 - `data/return_dates.json`: return/resubmit dates, keyed by invoice number.
 
 Run `pip install openpyxl` once, then `python3 tools/build_data.py` to rewrite `data.js`. Commit and push; Vercel redeploys automatically.
