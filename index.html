@@ -38,6 +38,10 @@
   --warn: #9a5a00;  --warn-soft: #fdf1df;
   --bad: #c0262d;   --bad-soft: #fde8e8;
   --age-1: #e9a24f; --age-2: #d97a2b; --age-3: #b9531c; --age-4: #8a3414;   /* days waiting: light -> dark */
+  --mitra: #1d5fae; --mitra-soft: #e7f0fb;   /* process flow actors */
+  --tde: #1f7a3a;   --tde-soft: #e5f2e9;
+  --fin: #5b5052;   --fin-soft: #efeceb;
+  --next: #6a3fb5;  --next-soft: #f0eafb;
   --shadow: 0 1px 2px rgba(34,26,27,.05), 0 6px 18px rgba(34,26,27,.04);
   --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
@@ -51,6 +55,7 @@
   --out: #3987e5; --in: #199e70; --bar: #8d99aa;
   --good: #4cc07a; --good-soft: #17301f; --warn: #f0b04a; --warn-soft: #3a2a12; --bad: #ff6b6b; --bad-soft: #3d1a1e;
   --age-1: #9c6430; --age-2: #c47a35; --age-3: #e8913f; --age-4: #ffb36b;
+  --mitra: #86b6ef; --mitra-soft: #1a2a40; --tde: #4cc07a; --tde-soft: #17301f; --fin: #c3bdcb; --fin-soft: #2a2636; --next: #b8a0f2; --next-soft: #2a2140;
   --shadow: 0 1px 2px rgba(0,0,0,.4);
 }
 
@@ -312,6 +317,60 @@ td.partner { font-weight: 600; }
 .defs dt:first-of-type, .defs dt:first-of-type + dd { border-top: 0; }
 .stack-col { display: flex; flex-direction: column; gap: 14px; }
 
+/* ---------- Process flow ---------- */
+.flow-legend { display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--ink-2); }
+.actor { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; padding: 2px 8px 2px 6px; border-radius: 99px; white-space: nowrap; }
+.actor svg { width: 12px; height: 12px; }
+.actor.mitra { background: var(--mitra-soft); color: var(--mitra); }
+.actor.tde { background: var(--tde-soft); color: var(--tde); }
+.actor.fin { background: var(--fin-soft); color: var(--fin); }
+.flow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.stage { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-width: 0; }
+.stage:not(:first-child)::before { content: ""; position: absolute; left: -12px; top: 30px; border: 6px solid transparent; border-left: 7px solid var(--ink-3); }
+.stage-h { padding: 14px 14px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); border-radius: 14px 14px 0 0; }
+.stage-h .no { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 800 13px/1 var(--f-display); display: grid; place-items: center; }
+.stage-h .top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.stage-h h3 { margin: 9px 0 2px; font: 700 14.5px/1.3 var(--f-display); }
+.stage-h p { margin: 0; font-size: 11.5px; color: var(--ink-3); }
+.stage-h .who { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 9px; }
+.tracked { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 2px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.stage-b { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.step { position: relative; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px 10px; background: var(--surface); }
+.step + .step::before { content: ""; position: absolute; left: 19px; top: -11px; width: 2px; height: 10px; background: var(--line); }
+.step .top { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.step .n { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 800 10.5px/1 var(--f-display); background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); flex: none; }
+.step p { margin: 0; font-size: 12.5px; line-height: 1.45; }
+.step.decision { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); background: var(--warn-soft); }
+.step.decision .q { font-weight: 700; font-size: 12.5px; margin-bottom: 6px; }
+.step.decision .yn { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.step.decision .yn span { display: flex; gap: 6px; align-items: baseline; }
+.step.decision .yn b { font-size: 11px; padding: 0 6px; border-radius: 4px; }
+.yn .no-b { background: var(--bad-soft); color: var(--bad); }
+.yn .yes-b { background: var(--good-soft); color: var(--good); }
+.step.milestone { border-color: color-mix(in srgb, var(--next) 40%, var(--line)); background: var(--next-soft); }
+.step.milestone .n { background: var(--next); color: #fff; border-color: var(--next); }
+.ladder { display: flex; flex-direction: column; gap: 4px; margin-top: 7px; }
+.ladder div { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 11.5px; padding: 4px 8px; border-radius: 6px; border-left: 3px solid; background: var(--surface-2); }
+.ladder b { font-weight: 700; }
+.flow-cards { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr; gap: 14px; }
+.fcard { padding: 18px 20px; }
+.fcard h2 { margin: 0 0 12px; font: 700 15px var(--f-display); display: flex; align-items: center; gap: 8px; }
+.fcard ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; line-height: 1.45; }
+.fcard .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fcard h3 { margin: 0 0 8px; font: 700 12.5px var(--f-display); color: var(--ink-2); }
+.fcard .map { display: flex; flex-direction: column; gap: 8px; }
+.fcard .map div { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; align-items: baseline; font-size: 12.5px; }
+.fcard .map b { font: 800 12px var(--f-display); color: var(--accent); }
+.fcard .map span { color: var(--ink-2); }
+.fcard .map em { font-style: normal; font-weight: 700; color: var(--ink); }
+.fcard .note { margin-top: 10px; font-size: 11.5px; color: var(--ink-3); }
+.banner { background: var(--side); color: var(--side-ink); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 10px; font: 700 14px var(--f-display); }
+.banner svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; background: var(--side-active); border-radius: 50%; padding: 3px; flex: none; }
+.glance { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.glance li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.glance li b { font: 800 12px var(--f-display); color: var(--accent); }
+.glance li span em { font-style: normal; color: var(--ink-3); }
+
 /* ---------- Tooltip & drawer ---------- */
 .tip { position: fixed; z-index: 60; pointer-events: none; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45; max-width: 300px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
 .scrim { position: fixed; inset: 0; background: rgba(18,14,16,.35); z-index: 30; }
@@ -354,6 +413,12 @@ td.partner { font-weight: 600; }
   .tile.t-partners { min-height: 0; }
   .guide { grid-template-columns: minmax(0, 1fr); }
 }
+@media (max-width: 1600px) {
+  .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stage:nth-child(3n+1)::before { display: none; }
+  .flow-cards { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .flow-cards .fcard:first-child { grid-column: 1 / -1; }
+}
 @media (max-width: 1180px) {
   .dash { grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas: "k1 k2" "k3 k4" "trend trend" "speed returns" "waiting waiting" "partners partners"; }
@@ -379,6 +444,9 @@ td.partner { font-weight: 600; }
   .chart { overflow-x: auto; min-height: 0; }
   .chart svg { position: static; min-width: 640px; height: 220px; }
   .defs { grid-template-columns: minmax(0, 1fr); }
+  .flow, .flow-cards, .fcard .two { grid-template-columns: minmax(0, 1fr); }
+  .flow-cards .fcard:first-child { grid-column: auto; }
+  .stage::before { display: none; }
   .defs dd { border-top: 0; padding-top: 0; }
 }
 @media (prefers-reduced-motion: no-preference) { .drawer { transition: transform .2s ease; } }
@@ -412,6 +480,7 @@ td.partner { font-weight: 600; }
       </nav>
       <div class="nav-label">Help</div>
       <nav class="nav">
+        <button data-go="flow"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="6" height="6" rx="1.5"/><rect x="15" y="14" width="6" height="6" rx="1.5"/><path d="M9 7h4a2 2 0 0 1 2 2v5"/></svg>Process flow</button>
         <button data-go="guide"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17v.5"/></svg>Guide &amp; definitions</button>
       </nav>
     </div>
@@ -485,6 +554,46 @@ td.partner { font-weight: 600; }
       </section>
     </section>
 
+    <!-- Process flow -->
+    <section class="page" id="v-flow" hidden>
+      <header class="head">
+        <div>
+          <div class="crumb">Help</div>
+          <h1>Process flow</h1>
+          <div class="sub">From BAPB / BAI numbering to payment: who does each step, in order, and which documents are needed.</div>
+        </div>
+        <div class="tools"><button class="ghost-btn theme-btn" type="button"></button></div>
+      </header>
+      <div class="flow-legend" id="flow-legend"></div>
+      <div class="flow" id="flow"></div>
+      <div class="flow-cards">
+        <article class="card fcard">
+          <h2>Documents to attach</h2>
+          <div class="two">
+            <div><h3>When requesting the BAST number (from Mitra)</h3>
+              <ul><li>BAPB / BAI, fully signed</li><li>All BAPB / BAI attachments</li><li>Draft BAST (if any)</li><li>Other supporting documents (as per contract)</li></ul></div>
+            <div><h3>When invoicing (from Mitra)</h3>
+              <ul><li>Invoice</li><li>BAST, fully signed</li><li>BAPB / BAI, fully signed</li><li>All attachments</li><li>Other supporting documents (if any)</li></ul></div>
+          </div>
+        </article>
+        <article class="card fcard">
+          <h2>Payment Voucher signing</h2>
+          <p style="margin:0 0 10px;color:var(--ink-2)">How far up the PV must be signed depends on the contract value.</p>
+          <div class="ladder" id="flow-ladder"></div>
+        </article>
+        <article class="card fcard">
+          <h2>Where this website fits</h2>
+          <div class="map">
+            <div><b>Step 14</b><span>Mitra sends the invoice to TDE → recorded as the <em>Submit date</em> (Invoices received).</span></div>
+            <div><b>Returns</b><span>Invoice sent back to Mitra and sent again → <em>Return date</em> and <em>Resubmit date</em> (Return history).</span></div>
+            <div><b>Step 19</b><span>Finance pays → recorded as the <em>Paid date</em> (Total paid).</span></div>
+          </div>
+          <p class="note">Steps 1–13 and 15–18 happen before or between these dates and are not recorded in this website yet.</p>
+        </article>
+      </div>
+      <div class="banner"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>Only a fully signed PV can be submitted to Finance.</div>
+    </section>
+
     <!-- Guide -->
     <section class="page" id="v-guide" hidden>
       <header class="head">
@@ -505,13 +614,20 @@ td.partner { font-weight: 600; }
               <li>Hover or tap the <b>ⓘ</b> next to a tile title to read what it measures.</li>
               <li>Click a <b>month bar</b>, a <b>partner</b>, a status or a <b>View</b> link to open the matching invoice list.</li>
               <li><b>Invoices</b> lists every invoice. Use the filters to narrow it down, then click a row to see its full timeline.</li>
+              <li><b>Process flow</b> shows the whole payment process step by step, from BAPB / BAI to Finance, and who does each step.</li>
             </ol>
           </article>
           <article class="card gcard">
-            <h2>Updating the data</h2>
-            <p>1. Put the new Excel export in <code>data/updates/</code>, with the date at the start of the file name (for example <code>2026-10-20_Order_Report.xlsx</code>).</p>
-            <p>2. Run <code>python3 tools/build_data.py</code>.</p>
-            <p>3. Commit and push. The website updates by itself, and <b>Last updated</b> in the menu shows the new date.</p>
+            <h2>The payment process at a glance</h2>
+            <ol class="glance">
+              <li><b>1</b><span>BAPB / BAI <em>· goods arrived or installed</em></span></li>
+              <li><b>2</b><span>Request &amp; BAST number</span></li>
+              <li><b>3</b><span>Signing the BAST</span></li>
+              <li><b>4</b><span>Invoicing <em>· tracked here from the submit date</em></span></li>
+              <li><b>5</b><span>Payment Voucher (PV)</span></li>
+              <li><b>6</b><span>Submit to Finance → paid <em>· tracked here as the paid date</em></span></li>
+            </ol>
+            <p style="margin:14px 0 0"><button class="link" data-go="flow">Open the full process flow →</button></p>
           </article>
         </div>
         <article class="card gcard">
@@ -1045,12 +1161,75 @@ function openDrawer(o) {
 }
 function closeDrawer() { $("drawer").hidden = true; $("scrim").hidden = true; }
 
+/* =================== PROCESS FLOW =================== */
+const ACTOR = {
+  mitra: `<span class="actor mitra"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>Mitra</span>`,
+  tde: `<span class="actor tde"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .8 3 2.8 3 6"/></svg>TDE / PCSD</span>`,
+  fin: `<span class="actor fin"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>Finance</span>`,
+};
+const LADDER = [
+  { v: "≤ Rp 2 billion", who: "up to VP", c: "var(--good)" },
+  { v: "> Rp 2 – 10 billion", who: "up to EVP", c: "var(--warn)" },
+  { v: "> Rp 10 billion", who: "up to CEO (with Exsum)", c: "var(--bad)" },
+];
+const FLOW = [
+  { t: "BAPB / BAI", sub: "Goods arrived / installation", who: ["mitra", "tde"], steps: [
+    { n: 1, a: "mitra", p: "Prepare the <b>BAPB / BAI</b> with all supporting attachments." },
+    { n: 2, a: "mitra", p: "Make sure all attachments are <b>fully signed</b>." },
+    { decision: true },
+    { n: 3, a: "mitra", p: "Request a <b>BAPB / BAI number</b> from TDE (by email)." },
+    { n: 4, a: "tde", p: "Check the documents and attachments." },
+    { n: 5, a: "tde", p: "<b>BAPB / BAI number</b> issued (by email)." } ] },
+  { t: "Request & BAST number", sub: "", who: ["mitra", "tde"], steps: [
+    { n: 6, a: "mitra", p: "Request a <b>BAST number</b> by email, attaching all documents, including the fully signed BAPB / BAI." },
+    { n: 7, a: "tde", p: "Check that the documents and attachments are complete." },
+    { n: 8, a: "tde", p: "<b>BAST number</b> issued (by email)." } ] },
+  { t: "Signing the BAST", sub: "", who: ["mitra", "tde"], steps: [
+    { n: 9, a: "mitra", p: "Sign the <b>BAST</b> on their side, after receiving the BAST number." },
+    { n: 10, a: "mitra", p: "Hand over the <b>hardcopy BAST</b> (signed by Mitra) with all attachments to TDE." },
+    { n: 11, a: "tde", p: "TDE signs the <b>BAST</b>." },
+    { n: 12, milestone: true, p: "BAST and all attachments are <b>fully signed</b>." } ] },
+  { t: "Invoicing", sub: "", who: ["mitra"], tracked: "Submit date", steps: [
+    { n: 13, a: "mitra", p: "Use the fully signed <b>BAST</b> and supporting documents to prepare the invoice." },
+    { n: 14, a: "mitra", p: "Issue the <b>invoice</b> and send it to TDE with the BAST and supporting documents (fully signed)." } ] },
+  { t: "Payment Voucher", sub: "Internal document", who: ["tde"], steps: [
+    { n: 15, a: "tde", p: "Prepare the <b>Payment Voucher (PV)</b> with all supporting documents." },
+    { n: 16, a: "tde", p: "PV goes through signing based on the contract value:", ladder: true },
+    { n: 17, milestone: true, p: "PV is <b>fully signed</b>." } ] },
+  { t: "Submit to Finance", sub: "", who: ["tde", "fin"], tracked: "Paid date", steps: [
+    { n: 18, a: "tde", p: "Submit the <b>PV</b> with all supporting documents to Finance." },
+    { n: 19, a: "fin", p: "Finance processes the <b>payment</b> as per the applicable procedure." } ] },
+];
+const ladderHtml = () => LADDER.map(l => `<div style="border-left-color:${l.c}"><span>${l.v}</span><b>${l.who}</b></div>`).join("");
+function renderFlow() {
+  $("flow-legend").innerHTML = `<span>Who does it:</span>${ACTOR.mitra}${ACTOR.tde}${ACTOR.fin}
+    <span class="tracked">Tracked here</span><span>= dates this website records</span>`;
+  $("flow").innerHTML = FLOW.map((st, i) => `
+    <section class="stage" aria-label="Stage ${i + 1}: ${esc(st.t)}">
+      <div class="stage-h">
+        <div class="top"><span class="no">${i + 1}</span>${st.tracked ? `<span class="tracked" data-tip="This website records the ${st.tracked.toLowerCase()} for this stage">Tracked here</span>` : ""}</div>
+        <h3>${st.t}</h3>${st.sub ? `<p>${st.sub}</p>` : ""}
+        <div class="who">${st.who.map(w => ACTOR[w]).join("")}</div>
+      </div>
+      <div class="stage-b">${st.steps.map(s => s.decision ? `
+        <div class="step decision">
+          <div class="q">All attachments fully signed?</div>
+          <div class="yn"><span><b class="no-b">No</b>Returned to Mitra to complete or revise.</span><span><b class="yes-b">Yes</b>Continue to step 3.</span></div>
+        </div>` : `
+        <div class="step${s.milestone ? " milestone" : ""}">
+          <div class="top"><span class="n">${s.n}</span>${s.a ? ACTOR[s.a] : ""}</div>
+          <p>${s.p}</p>${s.ladder ? `<div class="ladder">${ladderHtml()}</div>` : ""}
+        </div>`).join("")}</div>
+    </section>`).join("");
+  $("flow-ladder").innerHTML = ladderHtml();
+}
+
 /* =================== NAVIGATION =================== */
-const ROUTES = ["dashboard", "guide", ...Object.keys(PRESETS)];
+const ROUTES = ["dashboard", "guide", "flow", ...Object.keys(PRESETS)];
 function go(key, extra = {}, push = true) {
   if (!ROUTES.includes(key)) key = "dashboard";
   if (key === "dashboard") { state.view = "dash"; state.nav = "dashboard"; }
-  else if (key === "guide") { state.view = "guide"; state.nav = "guide"; }
+  else if (key === "guide" || key === "flow") { state.view = key; state.nav = key; }
   else {
     const p = PRESETS[key];
     state.view = "table"; state.nav = key; state.page = 0;
@@ -1065,8 +1244,9 @@ function render() {
   $("v-dash").hidden = state.view !== "dash";
   $("v-table").hidden = state.view !== "table";
   $("v-guide").hidden = state.view !== "guide";
+  $("v-flow").hidden = state.view !== "flow";
   document.querySelectorAll(".nav button[data-go]").forEach(b => b.classList.toggle("active", b.dataset.go === state.nav));
-  if (state.view === "dash") renderDash(); else if (state.view === "table") renderTable();
+  if (state.view === "dash") renderDash(); else if (state.view === "table") renderTable(); else if (state.view === "flow") renderFlow();
 }
 /* a filter change that contradicts the page's own preset turns the page into "All invoices" */
 function setFilter(k, v) {

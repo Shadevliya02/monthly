@@ -1,0 +1,4 @@
+# Only the website itself is deployed; source spreadsheets, scripts and notes stay in the repo.
+data/
+tools/
+README.md

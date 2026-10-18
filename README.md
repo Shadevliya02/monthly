@@ -11,6 +11,7 @@ Open `index.html` in a browser, or deploy the folder as-is (e.g. Vercel, preset 
   Each tile has a tag showing whether it follows the selected period or shows today's situation, and an ⓘ with a plain explanation.
 - **Invoices**: All invoices, by type (Outbound, Inbound), by status (Paid, In review, Returned) and Return history.
   Filters, removable filter chips, sorting, rows per page, sticky header. Click a row for the invoice timeline.
+- **Process flow**: the payment process from BAPB / BAI to Finance (19 steps in 6 stages), who does each step, required documents and PV signing levels.
 - **Guide & definitions**: how to use the site and what each term means.
 
 ## Updating the data
