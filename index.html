@@ -223,21 +223,39 @@ button, input, select { font: inherit; color: inherit; }
 .pill-x { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
 .tbl-wrap { overflow-x: auto; }
-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
-thead th { text-align: left; font-size: 11px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); padding: 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+/* fixed column widths (see colgroup) so every row lines up; wider than the screen scrolls sideways */
+table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; font-size: 12.5px; }
+thead th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .02em; color: var(--ink-2); background: var(--surface-2); padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: bottom; }
+thead th small { display: flex; gap: 8px; margin-top: 4px; font-weight: 500; letter-spacing: 0; color: var(--ink-3); font-size: 10.5px; }
+thead th small i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
 thead th.sort { cursor: pointer; }
 thead th.sort:hover { color: var(--ink); }
 thead th .dir { color: var(--accent); margin-left: 3px; }
-tbody td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody td { padding: 14px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
 tbody tr { cursor: pointer; }
-tbody tr:hover td { background: var(--surface-2); }
+tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); }
+tbody tr:hover td { background: var(--accent-soft); }
 td.r, th.r { text-align: right; }
 td.nw { white-space: nowrap; }
-td.mono { font-family: var(--f-mono); font-size: 11px; }
-td.desc { min-width: 240px; max-width: 360px; }
-td.partner { min-width: 140px; max-width: 200px; font-weight: 600; }
+td.mono { font-family: var(--f-mono); font-size: 11px; word-break: break-all; }
+td.desc, td.partner { overflow-wrap: anywhere; }
+td.partner { font-weight: 600; }
 td .muted, .muted { color: var(--ink-3); }
-td .dl { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
+td .chip { margin-top: -1px; }
+/* return / resubmit cycles: one line per cycle, same height in both columns so #n lines up */
+.cy { display: flex; flex-direction: column; }
+.cy .ln { height: 22px; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cy .n { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font-size: 10px; font-weight: 700; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); }
+.cy .g { font-size: 11px; color: var(--ink-3); }
+.cy .miss { color: var(--warn); font-size: 11.5px; font-weight: 600; }
+.after { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; white-space: nowrap; }
+.aging .bar { display: flex; gap: 2px; height: 8px; margin: 4px 0 7px; }
+.aging .bar span { display: block; height: 100%; border-radius: 3px; min-width: 3px; }
+.aging .rows { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 6px; align-items: center; font-size: 11.5px; color: var(--ink-2); }
+.aging .rows i { width: 8px; height: 8px; border-radius: 2px; }
+.aging .rows b { color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+.days b { font: 800 16px var(--f-display); font-variant-numeric: tabular-nums; display: block; }
+.days span { font-size: 11px; color: var(--ink-3); }
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
 .pager .btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .pager button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; height: 32px; min-width: 32px; padding: 0 10px; cursor: pointer; font-weight: 600; }
@@ -443,6 +461,22 @@ const ORDERS = SRC.orders.map(o => ({
   lead: o.paid ? days(o.submit, o.paid) : null,          // submit -> paid
   waiting: o.paid ? null : days(o.submit, TODAY),        // still open: days since submit
 }));
+/* return aging: split submit -> paid (or today) into review / partner fixing / payment */
+const STAGE = { rev: { l: "In review", c: "var(--ink-3)" }, fix: { l: "Partner fixing", c: "var(--warn)" }, pay: { l: "To payment", c: "var(--good)" } };
+ORDERS.forEach(o => {
+  if (!o.cycles.length) { o.aging = null; return; }
+  const ag = { rev: 0, fix: 0, pay: 0 };
+  let prev = o.submit;
+  o.cycles.forEach(([r, rs], i) => {
+    ag.rev += days(prev, r);
+    if (rs) { ag.fix += days(r, rs); prev = rs; }
+    else if (o.cycles[i + 1]) { ag.fix += days(r, o.cycles[i + 1][0]); prev = o.cycles[i + 1][0]; }
+    else prev = r;
+  });
+  ag.pay = days(prev, o.paid || TODAY);
+  ag.from = prev;
+  o.aging = ag;
+});
 const SEGS = [
   { k: "Outbound", label: "Outbound", col: "var(--out)" },
   { k: "Inbound", label: "Inbound", col: "var(--in)" },
@@ -680,6 +714,45 @@ function tableRows() {
   rows.sort((a, b) => { const x = get(a), y = get(b); return (x > y ? 1 : x < y ? -1 : a.no - b.no) * dir; });
   return rows;
 }
+function rowHtml(o) {
+  const dash = `<span class="muted">—</span>`;
+  let ret = dash, res = dash, aging = dash, after = "";
+  if (o.cycles.length) {
+    let prev = o.submit;
+    const multi = o.cycles.length > 1, rl = [], sl = [];
+    o.cycles.forEach(([r, rs], i) => {
+      const n = multi ? `<span class="n">${i + 1}</span>` : "";
+      rl.push(`<div class="ln">${n}<span>${fmtD(r)}</span><span class="g">+${days(prev, r)}d</span></div>`);
+      if (rs) { sl.push(`<div class="ln">${n}<span>${fmtD(rs)}</span><span class="g">+${days(r, rs)}d</span></div>`); prev = rs; }
+      else { sl.push(`<div class="ln">${n}<span class="miss">not recorded</span></div>`); prev = r; }
+    });
+    ret = `<div class="cy">${rl.join("")}</div>`;
+    res = `<div class="cy">${sl.join("")}</div>`;
+    const ag = o.aging, tot = ag.rev + ag.fix + ag.pay || 1;
+    const lbl = { rev: "Review", fix: "Partner", pay: o.paid ? "Payment" : "Waiting" };
+    aging = `<div class="aging" data-tip="${esc(`<b>Return aging</b><br>In review: ${ag.rev} days<br>Partner fixing: ${ag.fix} days<br>${o.paid ? "Last resubmit to paid" : "Waiting since last resubmit"}: ${ag.pay} days`)}">
+      <div class="bar">${["rev", "fix", "pay"].filter(k => ag[k] > 0).map(k => `<span style="flex:${ag[k]};background:${STAGE[k].c}"></span>`).join("")}</div>
+      <div class="rows">${["rev", "fix", "pay"].map(k => `${sqr2(k)}<span>${lbl[k]}</span><b>${ag[k]}d</b>`).join("")}</div></div>`;
+    if (o.paid) after = `<span class="after">+${ag.pay}d after ${o.cycles[o.cycles.length - 1][1] ? "resubmit" : "return"}</span>`;
+  }
+  return `<tr data-id="${o.no}" tabindex="0">
+    <td class="muted num">${o.no}</td>
+    <td class="nw">${o.seg}</td>
+    <td class="nw">${o.project === "-" ? "Project Delta" : esc(o.project)}</td>
+    <td class="partner">${esc(o.partner)}</td>
+    <td class="desc">${esc(o.desc)}</td>
+    <td class="mono">${esc(o.inv)}</td>
+    <td class="r nw num">${rp(o.value)}</td>
+    <td>${chip(o.status)}</td>
+    <td class="nw num">${fmtD(o.submit)}</td>
+    <td>${ret}</td>
+    <td>${res}</td>
+    <td class="nw num">${o.paid ? fmtD(o.paid) + after : dash}</td>
+    <td>${aging}</td>
+    <td class="r days">${o.paid ? `<b>${o.lead}</b><span>days to pay</span>` : `<b>${o.waiting}</b><span>days waiting</span>`}</td>
+  </tr>`;
+}
+const sqr2 = k => `<i style="background:${STAGE[k].c}"></i>`;
 function renderTable() {
   const f = state.f;
   $("f-q").value = f.q; $("f-kind").value = f.kind; $("f-partner").value = f.partner; $("f-status").value = f.status; $("f-month").value = String(f.month);
@@ -693,25 +766,14 @@ function renderTable() {
   const slice = rows.slice(state.page * PAGE, state.page * PAGE + PAGE);
   const th = (k, l, cls = "") => `<th class="sort ${cls}" data-sort="${k}">${l}${state.sort.key === k ? `<span class="dir">${state.sort.dir > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
   if (!rows.length) { $("tb").innerHTML = `<p class="empty-note" style="padding:40px 16px;text-align:center">No invoices match these filters.</p>`; $("pager").innerHTML = ""; return; }
-  $("tb").innerHTML = `<table><thead><tr>
+  const COLS = [56, 104, 124, 190, 300, 190, 150, 118, 122, 168, 168, 172, 210, 104];
+  const sqr = c => `<i style="background:${STAGE[c].c}"></i>`;
+  $("tb").innerHTML = `<table><colgroup>${COLS.map(w => `<col style="width:${w}px">`).join("")}</colgroup><thead><tr>
       ${th("no", "No")}<th>Type of Work</th><th>Type Project</th><th>Partner</th><th>Description</th><th>Invoice Number</th>
-      ${th("value", "BAST Value", "r")}<th>Status</th>${th("submit", "Submit Date")}<th>Return Date</th><th>Resubmit Date</th>${th("paid", "Paid Date")}${th("days", "Days", "r")}
-    </tr></thead><tbody>${slice.map(o => `
-      <tr data-id="${o.no}" tabindex="0">
-        <td class="muted num">${o.no}</td>
-        <td class="nw">${o.seg}</td>
-        <td class="nw">${o.project === "-" ? "Project Delta" : esc(o.project)}</td>
-        <td class="partner">${esc(o.partner)}</td>
-        <td class="desc">${esc(o.desc)}</td>
-        <td class="mono">${esc(o.inv)}</td>
-        <td class="r nw num">${rp(o.value)}</td>
-        <td>${chip(o.status)}</td>
-        <td class="nw num">${fmtD(o.submit)}</td>
-        <td>${o.cycles.length ? `<div class="dl">${o.cycles.map(c => fmtD(c[0])).join("<br>")}</div>` : `<span class="muted">—</span>`}</td>
-        <td>${o.cycles.length ? `<div class="dl">${o.cycles.map(c => c[1] ? fmtD(c[1]) : `<span class="muted">not recorded</span>`).join("<br>")}</div>` : `<span class="muted">—</span>`}</td>
-        <td class="nw num">${o.paid ? fmtD(o.paid) : `<span class="muted">—</span>`}</td>
-        <td class="r nw num">${o.paid ? `<b>${o.lead}</b> <span class="muted">to pay</span>` : `<b>${o.waiting}</b> <span class="muted">waiting</span>`}</td>
-      </tr>`).join("")}</tbody></table>`;
+      ${th("value", "BAST Value", "r")}<th>Status</th>${th("submit", "Submit Date")}
+      <th>Return Date<small>+d since (re)submit</small></th><th>Resubmit Date<small>+d since return</small></th>${th("paid", "Paid Date")}
+      <th>Return Aging<small><span>${sqr("rev")}Review</span><span>${sqr("fix")}Partner</span><span>${sqr("pay")}Payment</span></small></th>${th("days", "Days", "r")}
+    </tr></thead><tbody>${slice.map(o => rowHtml(o)).join("")}</tbody></table>`;
   const btn = (p, l, on) => `<button data-page="${p}"${on ? ' class="on"' : ""}${p < 0 || p >= pages ? " disabled" : ""}>${l}</button>`;
   const nums = []; for (let p = Math.max(0, state.page - 2); p <= Math.min(pages - 1, state.page + 2); p++) nums.push(btn(p, p + 1, p === state.page));
   $("pager").innerHTML = `<span>Showing ${state.page * PAGE + 1}–${state.page * PAGE + slice.length} of ${rows.length}</span><div class="btns">${btn(state.page - 1, "‹ Prev")}${nums.join("")}${btn(state.page + 1, "Next ›")}</div>`;
@@ -767,7 +829,7 @@ function go(key, extra = {}) {
     state.view = "table"; state.nav = key; state.page = 0;
     state.f = { q: "", kind: p.kind || "all", partner: "all", status: p.status || "all", month: p.month || "all", hist: false, ...extra };
   }
-  closeDrawer(); render(); $("main").scrollTo({ top: 0 });
+  closeDrawer(); render(); $("main").scrollTo({ top: 0 }); $("tb").scrollLeft = 0;
 }
 function render() {
   $("v-dash").hidden = state.view !== "dash";
