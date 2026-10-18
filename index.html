@@ -30,7 +30,7 @@
   --side-hover: #2f2526;
   --side-active: #b3141c;
   --out: #2a78d6;      /* Outbound */
-  --in: #1baf7a;       /* Inbound · Project Delta */
+  --in: #1baf7a;       /* Inbound */
   --bar: #55606f;
   --good: #1f7a3a;  --good-soft: #e5f2e9;
   --warn: #9a5a00;  --warn-soft: #fdf1df;
@@ -311,7 +311,7 @@ td .dl { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
   <aside class="side" aria-label="Navigation">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M6 18V9M12 18V5M18 18v-6"/></svg></div>
-      <div><b>Paid Monitor</b><span>Outbound &amp; Inbound invoices</span></div>
+      <div><b>Invoice Pulse</b><span>Outbound &amp; Inbound invoices</span></div>
     </div>
     <div class="nav-scroll">
       <div class="nav-label">Overview</div>
@@ -323,7 +323,7 @@ td .dl { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
         <button data-go="all"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>All invoices<span class="count" id="c-all"></span></button>
         <div class="sub nav">
           <button data-go="outbound">Outbound<span class="count" id="c-out"></span></button>
-          <button data-go="inbound">Inbound · Project Delta<span class="count" id="c-in"></span></button>
+          <button data-go="inbound">Inbound<span class="count" id="c-in"></span></button>
           <button data-go="returned">Returned<span class="count" id="c-ret"></span></button>
           <button data-go="review">In review<span class="count" id="c-rev"></span></button>
         </div>
@@ -373,7 +373,7 @@ td .dl { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
           <option value="outbound">Outbound (all)</option>
           <option value="out-xc">Outbound · Cross Connect</option>
           <option value="out-colo">Outbound · Colocation</option>
-          <option value="inbound">Inbound · Project Delta</option>
+          <option value="inbound">Inbound</option>
         </select></label>
         <label>Partner<select id="f-partner"></select></label>
         <label>Status<select id="f-status">
@@ -445,7 +445,7 @@ const ORDERS = SRC.orders.map(o => ({
 }));
 const SEGS = [
   { k: "Outbound", label: "Outbound", col: "var(--out)" },
-  { k: "Inbound", label: "Inbound · Project Delta", col: "var(--in)" },
+  { k: "Inbound", label: "Inbound", col: "var(--in)" },
 ];
 
 /* ---------- state ---------- */
@@ -655,7 +655,7 @@ function renderDash() {
 const PRESETS = {
   all: { title: "All invoices" },
   outbound: { title: "Outbound invoices", kind: "outbound" },
-  inbound: { title: "Inbound invoices · Project Delta", kind: "inbound" },
+  inbound: { title: "Inbound invoices", kind: "inbound" },
   returned: { title: "Returned invoices", status: "returned" },
   review: { title: "Invoices in review", status: "review" },
   open: { title: "Unpaid invoices", month: "unpaid" },

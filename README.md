@@ -1,6 +1,6 @@
 # Paid Monthly Dashboard · Outbound & Inbound
 
-Static web dashboard (no build step for the page itself) for invoices paid in 2026. Outbound = Type of Work "Outbound"; Inbound = "Project Delta".
+Static web dashboard (no build step for the page itself) for invoices paid in 2026. Outbound = Type of Work "Outbound"; Inbound = "Project Delta" (shown as Type Project "Project Delta" in the invoice table).
 
 Open `index.html` in a browser, or deploy the folder as-is (e.g. Vercel, preset "Other").
 
