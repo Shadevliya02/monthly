@@ -35,6 +35,7 @@
   --good: #1f7a3a;  --good-soft: #e5f2e9;
   --warn: #9a5a00;  --warn-soft: #fdf1df;
   --bad: #c0262d;   --bad-soft: #fde8e8;
+  --age-1: #e9a24f; --age-2: #d97a2b; --age-3: #b9531c; --age-4: #8a3414;   /* waiting age: light -> dark */
   --shadow: 0 1px 2px rgba(34,26,27,.05), 0 6px 18px rgba(34,26,27,.04);
   --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
@@ -47,6 +48,7 @@
   --side: #0c0a11; --side-ink: #ece8f2; --side-ink-2: #9690a2; --side-hover: #1b1823; --side-active: #b3141c;
   --out: #3987e5; --in: #199e70; --bar: #8d99aa;
   --good: #4cc07a; --good-soft: #17301f; --warn: #f0b04a; --warn-soft: #3a2a12; --bad: #ff6b6b; --bad-soft: #3d1a1e;
+  --age-1: #9c6430; --age-2: #c47a35; --age-3: #e8913f; --age-4: #ffb36b;
   --shadow: 0 1px 2px rgba(0,0,0,.4);
 }
 
@@ -204,11 +206,28 @@ button, input, select { font: inherit; color: inherit; }
 .wlist .age b { display: block; font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .wlist .age span { font-size: 11px; color: var(--ink-3); }
 
+
+/* delta chips, mini stats, stacked bars */
+.delta { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; vertical-align: 1px; margin-left: 4px; }
+.delta em { font-style: normal; font-weight: 500; opacity: .8; margin-left: 2px; }
+.delta.good { background: var(--good-soft); color: var(--good); }
+.delta.bad { background: var(--bad-soft); color: var(--bad); }
+.delta.neutral { background: var(--surface-2); color: var(--ink-2); }
+.duo .delta { margin-left: 0; }
+.duo .n b { color: var(--ink-2); }
+.mini { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini div { background: var(--surface-2); border-radius: 9px; padding: 8px 10px; min-width: 0; }
+.mini span { display: block; font-size: 11px; color: var(--ink-3); font-weight: 600; }
+.mini b { font: 800 16px var(--f-display); font-variant-numeric: tabular-nums; }
+.stack { display: flex; flex-direction: column; gap: 6px; }
+.stack-cap { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+.stack-bar { display: flex; gap: 2px; height: 10px; }
+.stack-bar span { display: block; height: 100%; border-radius: 3px; min-width: 4px; }
+.stack-lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-2); }
+.stack-lg i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.stack-lg b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
 /* return history */
-.rstats { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
-.rstats div { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: baseline; }
-.rstats b { font: 800 22px/1 var(--f-display); font-variant-numeric: tabular-nums; text-align: right; }
-.rstats span { font-size: 12.5px; color: var(--ink-2); }
 .foot-note { font-size: 11.5px; color: var(--ink-3); }
 
 /* ---------- Table page ---------- */
@@ -526,12 +545,43 @@ function renderPeriods() {
     MS.map((m, i) => `<button class="${state.period === i ? "on" : ""}${has(i) ? "" : " empty"}" data-period="${i}" role="tab" aria-selected="${state.period === i}" data-tip="${MONTHS[i]} ${YEAR}${has(i) ? "" : " · no paid invoices"}">${m}</button>`).join("");
 }
 
+/* previous period for "vs last month" (only when a month is selected) */
+const prevMonth = () => (state.period === "year" || state.period === 0) ? null : state.period - 1;
+const paidIn = m => ORDERS.filter(o => o.status === "paid" && o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === m);
+const receivedIn = m => ORDERS.filter(o => D(o.submit).getFullYear() === YEAR && D(o.submit).getMonth() === m);
+/* delta chip; good = "up" | "down" | null (neutral) */
+function delta(cur, prev, good, unit = "%") {
+  const pm = prevMonth();
+  if (pm === null || prev === null || prev === undefined || !isFinite(prev)) return "";
+  let txt, dir;
+  if (unit === "%") {
+    if (!prev) return "";
+    const ch = Math.round((cur - prev) / prev * 100);
+    dir = ch > 0 ? "up" : ch < 0 ? "down" : "flat";
+    // big jumps read better as a multiple (e.g. "×4.9") than as "+386%"
+    txt = cur / prev >= 3 ? "×" + (cur / prev >= 10 ? Math.round(cur / prev) : (cur / prev).toFixed(1)) : (ch > 0 ? "+" : "") + ch + "%";
+  } else {
+    const ch = Math.round(cur - prev);
+    dir = ch > 0 ? "up" : ch < 0 ? "down" : "flat"; txt = (ch > 0 ? "+" : "") + ch + unit;
+  }
+  const tone = dir === "flat" || !good ? "neutral" : dir === good ? "good" : "bad";
+  const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "■";
+  return `<span class="delta ${tone}" data-tip="Compared with ${MONTHS[pm]} ${YEAR}">${arrow} ${txt}<em>vs ${MS[pm]}</em></span>`;
+}
+
 function tileTotal(paid) {
   const tot = sum(paid, o => o.value);
   const rows = SEGS.map(s => { const g = paid.filter(o => o.seg === s.k); return { ...s, n: g.length, v: sum(g, o => o.value) }; });
+  const pm = prevMonth(), prev = pm === null ? null : paidIn(pm);
+  const top = paid.slice().sort((a, b) => b.value - a.value)[0];
   $("t-total").innerHTML = `
     <div class="tile-h"><h2>Total paid</h2><span class="hint">${periodName()}</span></div>
-    <div><div class="big">${rpS(tot)}</div><div class="big-sub"><b>${paid.length}</b> ${paid.length === 1 ? "invoice" : "invoices"} paid</div></div>
+    <div><div class="big">${rpS(tot)}</div>
+      <div class="big-sub"><b>${paid.length}</b> ${paid.length === 1 ? "invoice" : "invoices"} paid ${prev ? delta(tot, sum(prev, o => o.value), "up") : ""}</div></div>
+    ${paid.length ? `<div class="mini">
+      <div><span>Avg per invoice</span><b>${rpS(tot / paid.length)}</b></div>
+      <div data-tip="${esc(`<b>${top.partner}</b><br>${top.desc}<br>${rp(top.value)}`)}"><span>Largest payment</span><b>${rpS(top.value)}</b></div>
+    </div>` : ""}
     <div class="split">${rows.map(r => `
       <div class="split-row" data-tip="${esc(`<b>${r.label}</b><br>${rp(r.v)}<br>${r.n} invoices · ${pct(r.v, tot)}% of value`)}">
         <div class="lbl"><span><i style="background:${r.col}"></i>${r.label}</span><b>${rpS(r.v)}<em>${r.n} inv.</em></b></div>
@@ -542,13 +592,17 @@ function tileTotal(paid) {
 function tileReceived() {
   const rec = ORDERS.filter(inSubmitPeriod);
   const rows = SEGS.map(sg => { const g = rec.filter(o => o.seg === sg.k); return { ...sg, n: g.length, v: sum(g, o => o.value) }; });
-  const st = ["paid", "review", "returned"].map(k => ({ k, n: rec.filter(o => o.status === k).length }));
+  const st = [["paid", "var(--good)"], ["review", "var(--warn)"], ["returned", "var(--bad)"]].map(([k, c]) => ({ k, c, n: rec.filter(o => o.status === k).length }));
+  const pm = prevMonth();
   $("t-received").innerHTML = `
     <div class="tile-h"><h2>Invoices received</h2><button class="link" data-received="1">See list →</button></div>
     <div><div class="big">${rec.length}<small>${rec.length === 1 ? "invoice" : "invoices"}</small></div>
-      <div class="big-sub">submitted in <b>${periodName()}</b> · ${rpS(sum(rec, o => o.value))}</div></div>
-    <div class="foot-note">${st.map(x => `${STATUS[x.k]} <b style="color:var(--ink)">${x.n}</b>`).join(" · ")}</div>
-    <div class="split" style="margin-top:0">${rows.map(r => `
+      <div class="big-sub">submitted in <b>${periodName()}</b> · ${rpS(sum(rec, o => o.value))} ${pm === null ? "" : delta(rec.length, receivedIn(pm).length, null)}</div></div>
+    ${rec.length ? `<div class="stack">
+      <div class="stack-bar">${st.filter(x => x.n).map(x => `<span style="flex:${x.n};background:${x.c}" data-tip="${STATUS[x.k]}: ${x.n} of ${rec.length} (${pct(x.n, rec.length)}%)"></span>`).join("")}</div>
+      <div class="stack-lg">${st.map(x => `<span><i style="background:${x.c}"></i>${STATUS[x.k]} <b>${x.n}</b></span>`).join("")}</div>
+    </div>` : ""}
+    <div class="split">${rows.map(r => `
       <div class="split-row" data-tip="${esc(`<b>${r.label}</b><br>${r.n} invoices received · ${rp(r.v)}`)}">
         <div class="lbl"><span><i style="background:${r.col}"></i>${r.label}</span><b>${r.n}<em>${rpS(r.v)}</em></b></div>
         <div class="meter"><span style="width:${rec.length ? r.n / rec.length * 100 : 0}%;background:${r.col}"></span></div>
@@ -612,32 +666,51 @@ function tileTrend() {
     <div class="chart">${s}</div>`;
 }
 
+const WAIT = [
+  { l: "≤ 30 d", t: d => d <= 30, c: "var(--age-1)" },
+  { l: "31–60 d", t: d => d > 30 && d <= 60, c: "var(--age-2)" },
+  { l: "61–90 d", t: d => d > 60 && d <= 90, c: "var(--age-3)" },
+  { l: "> 90 d", t: d => d > 90, c: "var(--age-4)" },
+];
 function tileOpen() {
   const open = ORDERS.filter(o => o.status !== "paid");
   const ret = open.filter(o => o.status === "returned"), rev = open.filter(o => o.status === "review");
-  const oldest = open.slice().sort((a, b) => b.waiting - a.waiting)[0];
+  const w = WAIT.map(b => ({ ...b, n: open.filter(o => b.t(o.waiting)).length }));
   const t = $("t-open");
   t.classList.toggle("alert", ret.length > 0);
   t.innerHTML = `
     ${ret.length ? `<span class="alert-dot" data-tip="${ret.length} invoices were returned and need action">!</span>` : ""}
     <div class="tile-h"><h2>Not paid yet</h2><span class="hint" style="margin-right:${ret.length ? 34 : 0}px">As of ${fmtD(TODAY)}</span></div>
     <div><div class="big">${open.length}<small>invoices</small></div><div class="big-sub"><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</div></div>
+    ${open.length ? `<div class="stack">
+      <div class="stack-cap">Waiting since submit</div>
+      <div class="stack-bar">${w.filter(x => x.n).map(x => `<span style="flex:${x.n};background:${x.c}" data-tip="${x.l}: ${x.n} invoices"></span>`).join("")}</div>
+      <div class="stack-lg">${w.map(x => `<span><i style="background:${x.c}"></i>${x.l} <b>${x.n}</b></span>`).join("")}</div>
+    </div>` : ""}
     <div class="status-rows">
       <button data-go="returned">${chip("returned")}<span class="val">${rpS(sum(ret, o => o.value))}</span><span class="cnt">${ret.length}</span></button>
       <button data-go="review">${chip("review")}<span class="val">${rpS(sum(rev, o => o.value))}</span><span class="cnt">${rev.length}</span></button>
-    </div>
-    ${oldest ? `<div class="foot-note">Oldest: <b>${oldest.waiting} days</b> since submit (${esc(oldest.partner)})</div>` : ""}`;
+    </div>`;
 }
 
 function tileDays(paid) {
-  const cells = SEGS.map(s => { const g = paid.filter(o => o.seg === s.k); return { ...s, n: g.length, a: g.length ? Math.round(avg(g, o => o.lead)) : null }; });
+  const pm = prevMonth(), prev = pm === null ? null : paidIn(pm);
+  const cells = SEGS.map(s => {
+    const g = paid.filter(o => o.seg === s.k), pg = prev ? prev.filter(o => o.seg === s.k) : [];
+    const leads = g.map(o => o.lead).sort((a, b) => a - b);
+    return { ...s, n: g.length, a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null,
+      min: leads[0], max: leads[leads.length - 1] };
+  });
   $("t-days").innerHTML = `
     <div class="tile-h"><h2>Average days to get paid</h2></div>
     <div class="foot-note" style="margin-top:-6px">From submit invoice date to paid date</div>
     <div class="duo">${cells.map(c => `
       <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
-        <div class="n">${c.n ? plural(c.n, "invoice") + " paid" : "None paid"}</div></div>`).join("")}</div>`;
+        <div class="n">${c.n ? plural(c.n, "invoice") + " paid" : "None paid"}</div>
+        ${c.n ? `<div class="n">Fastest <b>${c.min}d</b> · slowest <b>${c.max}d</b></div>` : ""}
+        ${c.a !== null && c.pa !== null ? `<div style="margin-top:6px">${delta(c.a, c.pa, "down", "d")}</div>` : ""}
+      </div>`).join("")}</div>`;
 }
 
 const BUCKETS = [
@@ -665,15 +738,18 @@ function tileReturns() {
   const cycles = withR.flatMap(o => o.cycles);
   const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
   const paidR = withR.filter(o => o.paid);
-  const toPaid = paidR.map(o => { const c = o.cycles[o.cycles.length - 1]; return days(c[1] || c[0], o.paid); });
+  const ag = { rev: avg(withR, o => o.aging.rev), fix: avg(withR, o => o.aging.fix), pay: avg(paidR, o => o.aging.pay) };
+  const tot = ag.rev + ag.fix + ag.pay || 1;
+  const lbl = { rev: "In review", fix: "Partner fixing", pay: "To payment" };
   $("t-returns").innerHTML = `
     <div class="tile-h"><h2>Return history</h2><button class="link" data-hist="1">See invoices →</button></div>
     <div><div class="big">${cycles.length}<small>returns</small></div><div class="big-sub">on <b>${withR.length}</b> outbound invoices with recorded dates</div></div>
-    <div class="rstats">
-      <div><b>${fix.length ? Math.round(avg(fix, x => x)) : "–"}</b><span>avg days for the partner to fix and resubmit</span></div>
-      <div><b>${toPaid.length ? Math.round(avg(toPaid, x => x)) : "–"}</b><span>avg days from last resubmit to paid (${paidR.length} paid so far)</span></div>
+    <div class="stack">
+      <div class="stack-cap">Where the time goes (avg days per invoice)</div>
+      <div class="stack-bar">${["rev", "fix", "pay"].map(k => `<span style="flex:${ag[k]};background:${STAGE[k].c}" data-tip="${lbl[k]}: ${Math.round(ag[k])} days on average"></span>`).join("")}</div>
+      <div class="stack-lg">${["rev", "fix", "pay"].map(k => `<span><i style="background:${STAGE[k].c}"></i>${lbl[k]} <b>${Math.round(ag[k])}d</b></span>`).join("")}</div>
     </div>
-    <div class="foot-note">Return dates are recorded for these ${withR.length} invoices only.</div>`;
+    <div class="foot-note">Partner takes <b style="color:var(--ink)">${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> on average to fix a returned invoice. Return dates are recorded for these ${withR.length} invoices only.</div>`;
 }
 
 function tilePartners(paid) {
