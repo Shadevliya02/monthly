@@ -10,8 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: 16:9 KPI wall. Dark sidebar left; right = one-screen tile grid (big numbers, few words).
-   Full invoice table lives on its own page under "Invoice data". Light theme first, dark optional. */
+/* Layout: 16:9 wall. Sidebar navigation left; right = the page.
+   Dashboard: KPI strip on top, charts in the middle, "needs attention" at the bottom — one screen on 1920×1080.
+   Invoices: filter bar + scrollable table with sticky header. Guide: plain-language definitions.
+   Light theme first, dark optional (class .dark on <html>). */
 :root {
   color-scheme: light;
   --bg: #f4f2f1;
@@ -35,7 +37,7 @@
   --good: #1f7a3a;  --good-soft: #e5f2e9;
   --warn: #9a5a00;  --warn-soft: #fdf1df;
   --bad: #c0262d;   --bad-soft: #fde8e8;
-  --age-1: #e9a24f; --age-2: #d97a2b; --age-3: #b9531c; --age-4: #8a3414;   /* waiting age: light -> dark */
+  --age-1: #e9a24f; --age-2: #d97a2b; --age-3: #b9531c; --age-4: #8a3414;   /* days waiting: light -> dark */
   --shadow: 0 1px 2px rgba(34,26,27,.05), 0 6px 18px rgba(34,26,27,.04);
   --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
@@ -59,49 +61,58 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 400 13px/1.45 
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .num { font-variant-numeric: tabular-nums; }
+svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-/* ---------- Shell ---------- */
-.app { display: grid; grid-template-columns: 240px minmax(0, 1fr); height: 100%; }
+/* ---------- Shell & navigation ---------- */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); height: 100%; }
 .side {
-  background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
-  padding-block: 22px 18px; padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: 14px;
+  background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; overflow-y: auto;
+  padding-block: 20px 16px; padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: 14px;
 }
-.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 6px; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .brand-mark { width: 36px; height: 36px; border-radius: 9px; background: var(--side-active); display: grid; place-items: center; flex: none; }
 .brand-mark svg { width: 20px; height: 20px; }
 .brand b { display: block; font: 800 16px/1.15 var(--f-display); }
 .brand span { display: block; font-size: 11.5px; color: var(--side-ink-2); margin-top: 2px; }
-.nav-label { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--side-ink-2); padding: 14px 10px 6px; }
+.nav-label { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--side-ink-2); padding: 18px 12px 6px; }
 .nav { display: flex; flex-direction: column; gap: 2px; }
 .nav button {
-  display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px;
+  display: flex; align-items: center; gap: 11px; width: 100%; padding: 8px 12px; border: 0; border-radius: 8px;
   background: transparent; color: var(--side-ink); font-weight: 500; font-size: 13.5px; text-align: left; cursor: pointer; white-space: nowrap;
 }
-.nav button svg { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
+.nav button svg { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
 .nav button:hover { background: var(--side-hover); }
 .nav button.active { background: var(--side-active); color: #fff; font-weight: 600; }
-.nav .sub button { padding-left: 42px; font-size: 13px; }
-.nav button .count { margin-left: auto; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; background: rgba(255,255,255,.1); }
+.nav button.sub { padding-left: 40px; font-size: 13px; }
+.nav .cap { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--side-ink-2); padding: 10px 12px 3px 40px; opacity: .85; }
+.nav .sdot { width: 8px; height: 8px; border-radius: 50%; flex: none; margin-left: -19px; margin-right: 3px; }
+.nav button .count { margin-left: auto; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; background: rgba(255,255,255,.1); font-variant-numeric: tabular-nums; }
 .nav button.active .count { background: rgba(255,255,255,.22); }
-.side-foot { margin-top: auto; padding: 14px 10px 0; font-size: 11.5px; color: var(--side-ink-2); border-top: 1px solid rgba(255,255,255,.08); }
+.side-foot { margin-top: auto; padding: 16px 12px 0; font-size: 11.5px; color: var(--side-ink-2); border-top: 1px solid rgba(255,255,255,.08); }
+.side-foot b { display: block; color: var(--side-ink); font-weight: 600; font-size: 12.5px; margin-top: 2px; }
 
 .main { overflow-y: auto; min-width: 0; }
 .page {
-  display: flex; flex-direction: column; gap: 16px; min-height: 100%;
-  padding-block: 20px 24px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px; min-height: 100%;
+  padding-block: 18px 22px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
 }
 
-/* ---------- Header ---------- */
-.head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.head h1 { font: 800 24px/1.15 var(--f-display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
-.head .sub { color: var(--ink-2); font-size: 13px; margin-top: 3px; }
+/* ---------- Page header ---------- */
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+.head > div:first-child { min-width: 0; }
+.crumb { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); display: flex; gap: 6px; align-items: center; }
+.crumb span { color: var(--ink-3); }
+.head h1 { font: 800 24px/1.15 var(--f-display); letter-spacing: -.02em; margin: 4px 0 0; text-wrap: balance; }
+.head .sub { color: var(--ink-2); font-size: 13px; margin-top: 4px; max-width: 75ch; }
 .head .sub b { color: var(--ink); font-weight: 600; }
 .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 100%; }
+.period-lbl { font-size: 10.5px; font-weight: 700; color: var(--ink-3); letter-spacing: .08em; text-transform: uppercase; }
 .periods { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; overflow-x: auto; max-width: 100%; }
 .periods button { border: 0; background: transparent; height: 32px; min-width: 42px; padding: 0 9px; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .periods button:hover { background: var(--surface-2); color: var(--ink); }
 .periods button.empty { color: var(--ink-3); font-weight: 500; }
-.periods button.year { font-weight: 800; color: var(--ink); margin-right: 4px; }
+.periods button.year { font-weight: 800; color: var(--ink); margin-right: 4px; position: relative; }
+.periods button.year::after { content: ""; position: absolute; right: -4px; top: 7px; bottom: 7px; width: 1px; background: var(--line); }
 .periods button.on { background: var(--accent); color: var(--accent-ink); }
 .ghost-btn {
   display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px; border: 1px solid var(--line);
@@ -110,72 +121,66 @@ button, input, select { font: inherit; color: inherit; }
 .ghost-btn:hover { background: var(--surface-2); }
 .ghost-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---------- KPI grid ---------- */
-#v-dash { height: 100%; min-height: 720px; }
-.grid {
-  flex: 1; display: grid; gap: 14px;
+/* ---------- Dashboard grid ---------- */
+#v-dash { height: 100%; }
+.dash {
+  flex: 1; min-height: 0; display: grid; gap: 14px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(0, 1fr)); min-height: 0;
-  grid-template-areas: "total received trend trend" "days speed returns partners" "open waiting waiting partners";
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "k1 k2 k3 k4" "trend trend speed partners" "waiting waiting returns partners";
 }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow: hidden; position: relative; }
-.tile-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.tile-h h2 { margin: 0; font: 700 15px/1.25 var(--f-display); }
-.tile-h .hint { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
-.big { font: 800 44px/1 var(--f-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.big small { font-size: .45em; font-weight: 700; letter-spacing: 0; margin-left: 4px; color: var(--ink-2); }
-.big-sub { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
-.big-sub b { color: var(--ink); }
-.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; font-size: 12px; cursor: pointer; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; }
+.tile-h { display: flex; align-items: center; gap: 6px; min-height: 22px; }
+.tile-h h2 { margin: 0; font: 700 14.5px/1.25 var(--f-display); }
+.info { width: 20px; height: 20px; border: 0; padding: 0; background: transparent; color: var(--ink-3); cursor: help; display: grid; place-items: center; border-radius: 50%; flex: none; }
+.info:hover, .info:focus-visible { color: var(--ink); background: var(--surface-2); }
+.info svg { width: 15px; height: 15px; }
+.scope { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 2px 9px 2px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.scope svg { width: 12px; height: 12px; }
+.scope.now { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.alert-dot { width: 20px; height: 20px; border-radius: 50%; background: var(--bad); color: #fff; display: grid; place-items: center; font: 800 12px/1 var(--f-display); flex: none; }
+.tile.alert { border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
+.tile-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { font-size: 11.5px; color: var(--ink-3); }
+.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .link:hover { text-decoration: underline; }
-.empty-note { color: var(--ink-3); font-size: 13px; margin: auto 0; }
+.empty-note { color: var(--ink-3); font-size: 13px; margin: auto 0; text-align: center; }
 
-/* split rows (Outbound / Inbound) */
-.split { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
-.split-row .lbl { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; }
-.split-row .lbl span { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
-.split-row .lbl i { width: 10px; height: 10px; border-radius: 3px; }
-.split-row .lbl b { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.split-row .lbl em { font-style: normal; color: var(--ink-3); font-size: 12px; margin-left: 6px; font-weight: 500; }
-.meter { height: 6px; border-radius: 3px; background: var(--surface-2); margin-top: 5px; overflow: hidden; }
-.meter span { display: block; height: 100%; border-radius: 3px; }
+.big { font: 800 38px/1 var(--f-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.big small { font-size: .42em; font-weight: 700; letter-spacing: 0; margin-left: 5px; color: var(--ink-2); }
+.line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
+.line b { color: var(--ink); font-weight: 700; }
+.delta { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.delta em { font-style: normal; font-weight: 500; opacity: .8; }
+.delta.good { background: var(--good-soft); color: var(--good); }
+.delta.bad { background: var(--bad-soft); color: var(--bad); }
+.delta.neutral { background: var(--surface-2); color: var(--ink-2); }
 
-/* two big numbers side by side */
-.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: auto 0; }
+/* stacked bar + legend (shared by several tiles) */
+.sbar { display: flex; gap: 2px; height: 8px; }
+.sbar span { display: block; height: 100%; border-radius: 3px; min-width: 4px; }
+.lg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
+.lg span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.lg i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.lg b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.lg em { font-style: normal; color: var(--ink-3); }
+.cap { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+
+/* duo (Outbound | Inbound side by side) */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .duo > div + div { border-left: 1px solid var(--line); padding-left: 14px; }
-.duo .k { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
-.duo .k i { width: 10px; height: 10px; border-radius: 3px; }
-.duo .big { font-size: 40px; }
-.duo .n { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.duo .k { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+.duo .k i { width: 9px; height: 9px; border-radius: 2px; }
+.duo .n { font-size: 12px; color: var(--ink-3); margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.duo .n b { color: var(--ink-2); }
 
-/* bars list */
-.bars { display: flex; flex-direction: column; gap: 9px; margin-top: auto; margin-bottom: auto; }
-.bars .row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 52px; align-items: center; gap: 10px; font-size: 12.5px; }
-.bars .row .l b { display: block; font-weight: 700; white-space: nowrap; }
-.bars .row .l span { display: block; font-size: 11px; color: var(--ink-3); }
-.bars .row .track { height: 12px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
-.bars .row .track span { display: block; height: 100%; border-radius: 4px; background: var(--bar); }
-.bars .row .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
-.bars .row .v em { font-style: normal; display: block; font-size: 11px; color: var(--ink-3); font-weight: 500; }
-
-/* partner list */
-.plist { display: flex; flex-direction: column; gap: 2px; overflow: auto; margin: 0 -6px; }
-.plist button { display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 7px 6px 8px; cursor: pointer; }
-.plist button:hover { background: var(--surface-2); }
-.plist .top { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
-.plist .top span { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.plist .top b { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.plist .meta { font-size: 11px; color: var(--ink-3); display: flex; justify-content: space-between; }
-.plist .meter { height: 5px; margin-top: 4px; }
-
-/* open tile */
-.tile.alert { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
-.alert-dot { position: absolute; top: 14px; right: 14px; width: 26px; height: 26px; border-radius: 50%; background: var(--bad); color: #fff; display: grid; place-items: center; font: 800 15px/1 var(--f-display); }
-.status-rows { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
-.status-rows button { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; cursor: pointer; text-align: left; }
-.status-rows button:hover { background: var(--surface-2); }
-.status-rows .cnt { font: 800 18px var(--f-display); font-variant-numeric: tabular-nums; }
-.status-rows .val { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+/* not paid yet: two status buttons */
+.stbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stbtns button { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; cursor: pointer; text-align: left; min-width: 0; }
+.stbtns button:hover { background: var(--surface-2); }
+.stbtns .row { display: flex; align-items: baseline; gap: 8px; width: 100%; flex-wrap: wrap; }
+.stbtns .cnt { font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.stbtns .val { font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; width: max-content; }
 .chip svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -184,19 +189,38 @@ button, input, select { font: inherit; color: inherit; }
 .chip.returned { background: var(--bad-soft); color: var(--bad); }
 
 /* trend chart */
+.trend-ctl { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 2px; gap: 2px; }
-.seg button { border: 0; background: transparent; padding: 3px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+.seg button { border: 0; background: transparent; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-.legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); flex-wrap: wrap; align-items: center; }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i { width: 10px; height: 10px; border-radius: 3px; }
-.chart { flex: 1; min-height: 120px; position: relative; }
+.chart { flex: 1; min-height: 140px; position: relative; }
 .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
 .chart text { font-family: var(--f-body); }
 
+/* buckets */
+.bars { display: flex; flex-direction: column; gap: 10px; margin: auto 0; }
+.bars .row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 48px; align-items: center; gap: 10px; font-size: 12.5px; }
+.bars .row .l b { display: block; font-weight: 700; white-space: nowrap; }
+.bars .row .l span { display: block; font-size: 11px; color: var(--ink-3); }
+.bars .row .track { height: 12px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.bars .row .track span { display: block; height: 100%; border-radius: 4px; background: var(--bar); }
+.bars .row .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.bars .row .v em { font-style: normal; display: block; font-size: 11px; color: var(--ink-3); font-weight: 500; }
+
+/* partner list */
+.plist { display: flex; flex-direction: column; gap: 2px; overflow: auto; margin: 0 -6px; min-height: 0; }
+.plist button { display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 7px 6px 8px; cursor: pointer; }
+.plist button:hover { background: var(--surface-2); }
+.plist .top { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.plist .top span { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.plist .top b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.plist .meta { font-size: 11px; color: var(--ink-3); display: flex; justify-content: space-between; }
+.meter { height: 5px; border-radius: 3px; background: var(--surface-2); margin-top: 4px; overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 3px; }
+
 /* waiting list */
-.wlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; }
-.wlist button { display: grid; grid-template-columns: 92px minmax(0, 1fr) 130px 84px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 8px 6px; text-align: left; cursor: pointer; }
+.wlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
+.wlist button { display: grid; grid-template-columns: 96px minmax(0, 1fr) 130px 80px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 8px 6px; text-align: left; cursor: pointer; }
 .wlist button:first-child { border-top: 0; }
 .wlist button:hover { background: var(--surface-2); }
 .wlist .who b { display: block; font-weight: 700; font-size: 13px; }
@@ -205,52 +229,44 @@ button, input, select { font: inherit; color: inherit; }
 .wlist .age { text-align: right; }
 .wlist .age b { display: block; font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .wlist .age span { font-size: 11px; color: var(--ink-3); }
-
-
-/* delta chips, mini stats, stacked bars */
-.delta { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; vertical-align: 1px; margin-left: 4px; }
-.delta em { font-style: normal; font-weight: 500; opacity: .8; margin-left: 2px; }
-.delta.good { background: var(--good-soft); color: var(--good); }
-.delta.bad { background: var(--bad-soft); color: var(--bad); }
-.delta.neutral { background: var(--surface-2); color: var(--ink-2); }
-.duo .delta { margin-left: 0; }
-.duo .n b { color: var(--ink-2); }
-.mini { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.mini div { background: var(--surface-2); border-radius: 9px; padding: 8px 10px; min-width: 0; }
-.mini span { display: block; font-size: 11px; color: var(--ink-3); font-weight: 600; }
-.mini b { font: 800 16px var(--f-display); font-variant-numeric: tabular-nums; }
-.stack { display: flex; flex-direction: column; gap: 6px; }
-.stack-cap { font-size: 11px; font-weight: 600; color: var(--ink-3); }
-.stack-bar { display: flex; gap: 2px; height: 10px; }
-.stack-bar span { display: block; height: 100%; border-radius: 3px; min-width: 4px; }
-.stack-lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-2); }
-.stack-lg i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
-.stack-lg b { color: var(--ink); font-variant-numeric: tabular-nums; }
-
-/* return history */
 .foot-note { font-size: 11.5px; color: var(--ink-3); }
+.rlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
+.rlist button { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: start; border: 0; background: transparent; text-align: left; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
+.rlist button:hover { background: var(--surface-2); }
+.rlist b { font: 800 14px/1.3 var(--f-display); color: var(--bad); font-variant-numeric: tabular-nums; }
+.rlist span { font-size: 12px; color: var(--ink-2); line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rlist em { font-style: normal; font-weight: 700; color: var(--ink); margin-right: 4px; }
+.foot-note b { color: var(--ink); }
 
-/* ---------- Table page ---------- */
+/* ---------- Invoices page ---------- */
 .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
 .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700; color: var(--ink-2); letter-spacing: .02em; min-width: 0; }
 .filters select, .filters input { height: 36px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 0 10px; font-size: 13px; font-weight: 500; min-width: 0; max-width: 100%; }
-.filters .q input { width: 260px; max-width: 100%; }
-.filters select { min-width: 150px; max-width: 240px; }
+.filters .q input { width: 250px; max-width: 100%; }
+.filters select { min-width: 140px; max-width: 230px; }
 .filters .grow { flex: 1; }
-.summary { display: flex; gap: 18px; flex-wrap: wrap; align-items: baseline; font-size: 13px; color: var(--ink-2); }
-.summary b { font: 800 20px var(--f-display); color: var(--ink); margin-right: 4px; font-variant-numeric: tabular-nums; }
-.pill-x { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.sumrow { display: flex; justify-content: space-between; align-items: center; gap: 10px 18px; flex-wrap: wrap; }
+.summary { display: flex; gap: 6px 18px; flex-wrap: wrap; align-items: baseline; font-size: 13px; color: var(--ink-2); }
+.summary b { font: 800 19px var(--f-display); color: var(--ink); margin-right: 4px; font-variant-numeric: tabular-nums; }
+.fchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.fchip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 3px 6px 3px 10px; font-size: 12px; cursor: pointer; }
+.fchip span { color: var(--ink-3); }
+.fchip b { font-weight: 600; }
+.fchip i { font-style: normal; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); font-size: 11px; }
+.fchip:hover i { background: var(--accent); color: var(--accent-ink); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
-.tbl-wrap { overflow-x: auto; }
-/* fixed column widths (see colgroup) so every row lines up; wider than the screen scrolls sideways */
+.table-card { overflow: hidden; }
+/* own scroll box so the header can stay visible; wide tables scroll sideways */
+.tbl-wrap { overflow: auto; max-height: calc(100vh - 300px); min-height: 280px; }
 table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; font-size: 12.5px; }
-thead th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .02em; color: var(--ink-2); background: var(--surface-2); padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: bottom; }
+thead th { position: sticky; top: 0; z-index: 2; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .02em; color: var(--ink-2); background: var(--surface-2); padding: 11px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: bottom; }
 thead th small { display: flex; gap: 8px; margin-top: 4px; font-weight: 500; letter-spacing: 0; color: var(--ink-3); font-size: 10.5px; }
 thead th small i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
 thead th.sort { cursor: pointer; }
 thead th.sort:hover { color: var(--ink); }
 thead th .dir { color: var(--accent); margin-left: 3px; }
-tbody td { padding: 14px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
+thead th .info { display: inline-grid; width: 16px; height: 16px; vertical-align: -3px; margin-left: 2px; }
+tbody td { padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
 tbody tr { cursor: pointer; }
 tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); }
 tbody tr:hover td { background: var(--accent-soft); }
@@ -259,27 +275,42 @@ td.nw { white-space: nowrap; }
 td.mono { font-family: var(--f-mono); font-size: 11px; word-break: break-all; }
 td.desc, td.partner { overflow-wrap: anywhere; }
 td.partner { font-weight: 600; }
-td .muted, .muted { color: var(--ink-3); }
-td .chip { margin-top: -1px; }
-/* return / resubmit cycles: one line per cycle, same height in both columns so #n lines up */
+.muted { color: var(--ink-3); }
 .cy { display: flex; flex-direction: column; }
 .cy .ln { height: 22px; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .cy .n { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font-size: 10px; font-weight: 700; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); }
 .cy .g { font-size: 11px; color: var(--ink-3); }
 .cy .miss { color: var(--warn); font-size: 11.5px; font-weight: 600; }
 .after { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; white-space: nowrap; }
-.aging .bar { display: flex; gap: 2px; height: 8px; margin: 4px 0 7px; }
-.aging .bar span { display: block; height: 100%; border-radius: 3px; min-width: 3px; }
+.aging .sbar { margin: 4px 0 7px; }
 .aging .rows { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 6px; align-items: center; font-size: 11.5px; color: var(--ink-2); }
 .aging .rows i { width: 8px; height: 8px; border-radius: 2px; }
 .aging .rows b { color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
 .days b { font: 800 16px var(--f-display); font-variant-numeric: tabular-nums; display: block; }
 .days span { font-size: 11px; color: var(--ink-3); }
-.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); border-top: 1px solid var(--line); }
+.pager .left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pager select { height: 30px; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 0 6px; }
 .pager .btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .pager button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; height: 32px; min-width: 32px; padding: 0 10px; cursor: pointer; font-weight: 600; }
 .pager button[disabled] { opacity: .4; cursor: default; }
 .pager button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.empty-box { padding: 56px 16px; text-align: center; color: var(--ink-2); }
+.empty-box b { display: block; font: 700 16px var(--f-display); color: var(--ink); margin-bottom: 4px; }
+
+/* ---------- Guide ---------- */
+.guide { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 14px; align-items: start; }
+.gcard { padding: 20px 22px; }
+.gcard h2 { margin: 0 0 12px; font: 700 16px var(--f-display); }
+.gcard ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; line-height: 1.55; max-width: 62ch; }
+.gcard p { margin: 0 0 10px; line-height: 1.55; color: var(--ink-2); max-width: 62ch; }
+.gcard code { font-family: var(--f-mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+.defs { display: grid; grid-template-columns: 180px minmax(0, 1fr); margin: 0; }
+.defs dt, .defs dd { padding: 10px 0; border-top: 1px solid var(--line); margin: 0; }
+.defs dt { font-weight: 700; padding-right: 14px; }
+.defs dd { color: var(--ink-2); line-height: 1.55; }
+.defs dt:first-of-type, .defs dt:first-of-type + dd { border-top: 0; }
+.stack-col { display: flex; flex-direction: column; gap: 14px; }
 
 /* ---------- Tooltip & drawer ---------- */
 .tip { position: fixed; z-index: 60; pointer-events: none; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45; max-width: 300px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
@@ -295,6 +326,7 @@ td .chip { margin-top: -1px; }
 .dr-x { margin-left: auto; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: none; display: grid; place-items: center; }
 .dr-x svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
 .dr-b { padding: 18px 22px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.dr-b h4 { margin: 0; font: 700 13px var(--f-display); }
 .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
 .facts div span { display: block; font-size: 11px; color: var(--ink-3); font-weight: 600; }
 .facts div b { font-weight: 600; overflow-wrap: anywhere; }
@@ -309,34 +341,45 @@ td .chip { margin-top: -1px; }
 .steps .link-row .txt { font-size: 12px; color: var(--ink-2); align-self: center; padding: 5px 0; }
 .steps .link-row .txt b { color: var(--ink); }
 
-/* one-screen layout only where the 16:9 wall has room; otherwise tiles take their natural height and the page scrolls */
+/* ---------- Responsive ---------- */
+/* the one-screen wall needs a large display; elsewhere tiles take their natural height and the page scrolls */
 @media (max-width: 1600px), (max-height: 1000px) {
   #v-dash { height: auto; }
-  .grid { grid-template-rows: none; grid-auto-rows: minmax(260px, auto); }
-  .tile.trend-t { min-height: 320px; }
+  .dash { grid-template-rows: none; grid-auto-rows: minmax(min-content, auto); }
+  .tile.t-trend, .tile.t-wait { min-height: 320px; }
+  .tile.t-partners { min-height: 520px; }
 }
-@media (max-width: 1400px) {
-  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: minmax(250px, auto);
-    grid-template-areas: "total received" "trend trend" "open days" "speed returns" "partners waiting"; }
-  .tile.trend-t { min-height: 300px; }
+@media (max-width: 1500px) {
+  .dash { grid-template-areas: "k1 k2 k3 k4" "trend trend trend trend" "speed speed returns returns" "waiting waiting partners partners"; }
+  .tile.t-partners { min-height: 0; }
+  .guide { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1180px) {
+  .dash { grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "k1 k2" "k3 k4" "trend trend" "speed returns" "waiting waiting" "partners partners"; }
 }
 @media (max-width: 960px) {
   html, body { height: auto; }
   .app { grid-template-columns: minmax(0, 1fr); height: auto; }
   .side { padding-block: 12px 10px; padding-right: max(14px, env(safe-area-inset-right, 0px)); }
-  .brand { border: 0; padding-bottom: 4px; margin: 0; }
-  .nav-label, .side-foot { display: none; }
+  .brand { border: 0; padding-bottom: 6px; }
+  .nav-label, .side-foot, .nav .cap { display: none; }
   .nav-scroll { display: flex; overflow-x: auto; gap: 2px; }
   .nav { flex-direction: row; }
-  .nav button, .nav .sub button { width: auto; padding-left: 12px; }
+  .nav button, .nav button.sub { width: auto; padding-left: 12px; }
+  .nav .sdot { margin-left: 0; }
   .main { overflow: visible; }
   .page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .head > div { min-width: 0; }
-  .grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "total" "received" "open" "trend" "days" "speed" "returns" "partners" "waiting"; }
+  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k1" "k2" "k3" "k4" "trend" "speed" "returns" "waiting" "partners"; }
   .wlist button { grid-template-columns: minmax(0, 1fr) 70px; }
   .wlist .st, .wlist .amt { display: none; }
   .filters .q input, .filters select { width: 100%; max-width: 100%; }
   .filters label { flex: 1 1 140px; }
+  .tbl-wrap { max-height: none; }
+  .chart { overflow-x: auto; min-height: 0; }
+  .chart svg { position: static; min-width: 640px; height: 220px; }
+  .defs { grid-template-columns: minmax(0, 1fr); }
+  .defs dd { border-top: 0; padding-top: 0; }
 }
 @media (prefers-reduced-motion: no-preference) { .drawer { transition: transform .2s ease; } }
 </style>
@@ -353,59 +396,68 @@ td .chip { margin-top: -1px; }
     <div class="nav-scroll">
       <div class="nav-label">Overview</div>
       <nav class="nav">
-        <button data-go="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+        <button data-go="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
       </nav>
-      <div class="nav-label">Invoice data</div>
+      <div class="nav-label">Invoices</div>
       <nav class="nav">
         <button data-go="all"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>All invoices<span class="count" id="c-all"></span></button>
-        <div class="sub nav">
-          <button data-go="outbound">Outbound<span class="count" id="c-out"></span></button>
-          <button data-go="inbound">Inbound<span class="count" id="c-in"></span></button>
-          <button data-go="returned">Returned<span class="count" id="c-ret"></span></button>
-          <button data-go="review">In review<span class="count" id="c-rev"></span></button>
-        </div>
+        <div class="cap">By type</div>
+        <button class="sub" data-go="outbound"><span class="sdot" style="background:var(--out)"></span>Outbound<span class="count" id="c-out"></span></button>
+        <button class="sub" data-go="inbound"><span class="sdot" style="background:var(--in)"></span>Inbound<span class="count" id="c-in"></span></button>
+        <div class="cap">By status</div>
+        <button class="sub" data-go="paid"><span class="sdot" style="background:var(--good)"></span>Paid<span class="count" id="c-paid"></span></button>
+        <button class="sub" data-go="review"><span class="sdot" style="background:var(--warn)"></span>In review<span class="count" id="c-rev"></span></button>
+        <button class="sub" data-go="returned"><span class="sdot" style="background:var(--bad)"></span>Returned<span class="count" id="c-ret"></span></button>
+        <button data-go="history"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Return history<span class="count" id="c-hist"></span></button>
+      </nav>
+      <div class="nav-label">Help</div>
+      <nav class="nav">
+        <button data-go="guide"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17v.5"/></svg>Guide &amp; definitions</button>
       </nav>
     </div>
     <div class="side-foot" id="source"></div>
   </aside>
 
   <main class="main" id="main">
-    <!-- KPI dashboard -->
+    <!-- Dashboard -->
     <section class="page" id="v-dash">
       <header class="head">
         <div>
+          <div class="crumb">Dashboard</div>
           <h1>Paid Monthly · Outbound &amp; Inbound</h1>
           <div class="sub" id="d-sub"></div>
         </div>
         <div class="tools">
+          <span class="period-lbl">Period</span>
           <div class="periods" id="periods" role="tablist" aria-label="Period"></div>
           <button class="ghost-btn theme-btn" type="button"></button>
         </div>
       </header>
-      <div class="grid">
-        <article class="tile" style="grid-area:total" id="t-total"></article>
-        <article class="tile" style="grid-area:received" id="t-received"></article>
-        <article class="tile trend-t" style="grid-area:trend" id="t-trend"></article>
-        <article class="tile" style="grid-area:open" id="t-open"></article>
-        <article class="tile" style="grid-area:days" id="t-days"></article>
+      <div class="dash">
+        <article class="tile" style="grid-area:k1" id="t-total"></article>
+        <article class="tile" style="grid-area:k2" id="t-received"></article>
+        <article class="tile" style="grid-area:k3" id="t-days"></article>
+        <article class="tile" style="grid-area:k4" id="t-open"></article>
+        <article class="tile t-trend" style="grid-area:trend" id="t-trend"></article>
         <article class="tile" style="grid-area:speed" id="t-speed"></article>
+        <article class="tile t-partners" style="grid-area:partners" id="t-partners"></article>
+        <article class="tile t-wait" style="grid-area:waiting" id="t-waiting"></article>
         <article class="tile" style="grid-area:returns" id="t-returns"></article>
-        <article class="tile" style="grid-area:partners" id="t-partners"></article>
-        <article class="tile" style="grid-area:waiting" id="t-waiting"></article>
       </div>
     </section>
 
-    <!-- Invoice table -->
+    <!-- Invoices -->
     <section class="page" id="v-table" hidden>
       <header class="head">
         <div>
+          <div class="crumb" id="tb-crumb"></div>
           <h1 id="tb-title">All invoices</h1>
-          <div class="sub">Every order in the source file. Click a row to see its full timeline.</div>
+          <div class="sub" id="tb-desc"></div>
         </div>
         <div class="tools"><button class="ghost-btn theme-btn" type="button"></button></div>
       </header>
       <div class="filters">
-        <label class="q">Search<input id="f-q" type="search" placeholder="Partner, description, invoice no."></label>
+        <label class="q">Search<input id="f-q" type="search" placeholder="Partner, description, invoice or contract no."></label>
         <label>Type<select id="f-kind">
           <option value="all">All types</option>
           <option value="outbound">Outbound (all)</option>
@@ -417,19 +469,71 @@ td .chip { margin-top: -1px; }
         <label>Status<select id="f-status">
           <option value="all">All statuses</option>
           <option value="paid">Paid</option>
+          <option value="unpaid">Not paid yet (in review + returned)</option>
           <option value="review">In review</option>
           <option value="returned">Returned</option>
         </select></label>
-        <label>Submit month<select id="f-smonth"></select></label>
-        <label>Paid month<select id="f-month"></select></label>
+        <label>Submitted in<select id="f-smonth"></select></label>
+        <label>Paid in<select id="f-month"></select></label>
         <span class="grow"></span>
-        <button class="ghost-btn" type="button" id="f-reset">Reset filters</button>
+        <button class="ghost-btn" type="button" id="f-reset">Clear filters</button>
       </div>
-      <div class="summary" id="tb-sum"></div>
-      <section class="card">
+      <div class="sumrow"><div class="summary" id="tb-sum"></div><div class="fchips" id="tb-chips"></div></div>
+      <section class="card table-card">
         <div class="tbl-wrap" id="tb"></div>
         <div class="pager" id="pager"></div>
       </section>
+    </section>
+
+    <!-- Guide -->
+    <section class="page" id="v-guide" hidden>
+      <header class="head">
+        <div>
+          <div class="crumb">Help</div>
+          <h1>Guide &amp; definitions</h1>
+          <div class="sub">What each page and number means, in plain words.</div>
+        </div>
+        <div class="tools"><button class="ghost-btn theme-btn" type="button"></button></div>
+      </header>
+      <div class="guide">
+        <div class="stack-col">
+          <article class="card gcard">
+            <h2>How to use this website</h2>
+            <ol>
+              <li><b>Dashboard</b> gives the summary. Pick a <b>period</b> at the top right: <b>2026</b> for the whole year, or a single month.</li>
+              <li>Tiles with a red <b>calendar tag</b> (for example “Sep 2026”) follow that period. Tiles tagged <b>Today</b> always show the current situation.</li>
+              <li>Hover or tap the <b>ⓘ</b> next to a tile title to read what it measures.</li>
+              <li>Click a <b>month bar</b>, a <b>partner</b>, a status or a <b>View</b> link to open the matching invoice list.</li>
+              <li><b>Invoices</b> lists every invoice. Use the filters to narrow it down, then click a row to see its full timeline.</li>
+            </ol>
+          </article>
+          <article class="card gcard">
+            <h2>Updating the data</h2>
+            <p>1. Put the new Excel export in <code>data/updates/</code>, with the date at the start of the file name (for example <code>2026-10-20_Order_Report.xlsx</code>).</p>
+            <p>2. Run <code>python3 tools/build_data.py</code>.</p>
+            <p>3. Commit and push. The website updates by itself, and <b>Last updated</b> in the menu shows the new date.</p>
+          </article>
+        </div>
+        <article class="card gcard">
+          <h2>Terms</h2>
+          <dl class="defs">
+            <dt>Outbound</dt><dd>Invoices from partners for outbound work: Cross Connect and Colocation.</dd>
+            <dt>Inbound</dt><dd>Invoices for inbound work. In the table, Type Project shows “Project Delta”.</dd>
+            <dt>BAST value</dt><dd>The invoice amount, taken from the BAST.</dd>
+            <dt>Submit date</dt><dd>The day the invoice was submitted to TDE. “Invoices received” counts by this date.</dd>
+            <dt>Paid date</dt><dd>The day the invoice was paid. “Total paid” counts by this date.</dd>
+            <dt>Days to get paid</dt><dd>Paid date minus submit date, in calendar days.</dd>
+            <dt>Paid</dt><dd>Payment is done.</dd>
+            <dt>In review</dt><dd>Submitted and not paid yet. Documents are being checked or processed.</dd>
+            <dt>Returned</dt><dd>Sent back to the partner to fix. Needs follow-up.</dd>
+            <dt>Not paid yet</dt><dd>In review plus Returned.</dd>
+            <dt>Days waiting</dt><dd>For invoices not paid yet: today minus submit date.</dd>
+            <dt>Return / Resubmit</dt><dd>Each time an invoice is sent back to the partner (return) and sent again (resubmit). Numbered 1, 2, 3 when it happens more than once.</dd>
+            <dt>Return aging</dt><dd>Where the time went for a returned invoice: <b>Review</b> (TDE checking, before each return), <b>Partner</b> (fixing, from return to resubmit) and <b>Payment</b> (from the last resubmit to paid).</dd>
+            <dt>vs last month</dt><dd>Change compared with the month before. Green means better, red means worse, grey is neutral. Shown only when a month is selected.</dd>
+          </dl>
+        </article>
+      </div>
     </section>
   </main>
 </div>
@@ -449,12 +553,19 @@ const YEAR = 2026;
 const MS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const STATUS = { paid: "Paid", review: "In review", returned: "Returned" };
+const ICON = {
+  info: `<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>`,
+  cal: `<svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`,
+  clock: `<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  rec: `<svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>`,
+};
 const ICON_ST = {
   paid: `<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>`,
   review: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>`,
   returned: `<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>`,
 };
 
+/* ---------- helpers ---------- */
 const D = s => new Date(s + "T00:00:00");
 const NOW = (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
 const TODAY = NOW.getFullYear() + "-" + String(NOW.getMonth() + 1).padStart(2, "0") + "-" + String(NOW.getDate()).padStart(2, "0");
@@ -475,15 +586,17 @@ const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const $ = id => document.getElementById(id);
 const chip = st => `<span class="chip ${st}">${ICON_ST[st] || ""}${STATUS[st] || esc(st)}</span>`;
+const inYM = (date, sel) => { if (!date) return false; const d = D(date); return d.getFullYear() === YEAR && (sel === "year" || d.getMonth() === +sel); };
 
+/* ---------- data ---------- */
 const ORDERS = SRC.orders.map(o => ({
   ...o,
   seg: o.work === "Project Delta" ? "Inbound" : "Outbound",
   lead: o.paid ? days(o.submit, o.paid) : null,          // submit -> paid
-  waiting: o.paid ? null : days(o.submit, TODAY),        // still open: days since submit
+  waiting: o.paid ? null : days(o.submit, TODAY),        // not paid yet: days since submit
 }));
 /* return aging: split submit -> paid (or today) into review / partner fixing / payment */
-const STAGE = { rev: { l: "In review", c: "var(--ink-3)" }, fix: { l: "Partner fixing", c: "var(--warn)" }, pay: { l: "To payment", c: "var(--good)" } };
+const STAGE = { rev: { l: "Review", c: "var(--ink-3)" }, fix: { l: "Partner", c: "var(--warn)" }, pay: { l: "Payment", c: "var(--good)" } };
 ORDERS.forEach(o => {
   if (!o.cycles.length) { o.aging = null; return; }
   const ag = { rev: 0, fix: 0, pay: 0 };
@@ -495,7 +608,6 @@ ORDERS.forEach(o => {
     else prev = r;
   });
   ag.pay = days(prev, o.paid || TODAY);
-  ag.from = prev;
   o.aging = ag;
 });
 const SEGS = [
@@ -504,27 +616,49 @@ const SEGS = [
 ];
 
 /* ---------- state ---------- */
-const state = {
-  view: "dash", nav: "dash", period: "year", trendMode: "value", dark: false,
-  f: { q: "", kind: "all", partner: "all", status: "all", month: "all", smonth: "all", hist: false },
-  sort: { key: "submit", dir: -1 }, page: 0,
-};
+const defaultsF = () => ({ q: "", kind: "all", partner: "all", status: "all", smonth: "all", month: "all", hist: false });
+const state = { view: "dash", nav: "dashboard", period: "year", trendMode: "value", dark: false, f: defaultsF(), sort: { key: "submit", dir: -1 }, page: 0, per: 20 };
 try {
   const p = localStorage.getItem("pm2-period"); if (p !== null) state.period = p === "year" ? "year" : +p;
   state.dark = localStorage.getItem("pm2-theme") === "dark";
+  const per = +localStorage.getItem("pm2-per"); if ([20, 50, 100].includes(per)) state.per = per;
 } catch (e) {}
 const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
-const inPeriod = o => {
-  if (o.status !== "paid" || !o.paid) return false;
-  const d = D(o.paid);
-  return d.getFullYear() === YEAR && (state.period === "year" || d.getMonth() === state.period);
-};
-const inSubmitPeriod = o => {
-  const d = D(o.submit);
-  return d.getFullYear() === YEAR && (state.period === "year" || d.getMonth() === state.period);
-};
+const periodSel = () => state.period === "year" ? "year" : String(state.period);
 const periodName = () => state.period === "year" ? String(YEAR) : MONTHS[state.period] + " " + YEAR;
+const periodShort = () => state.period === "year" ? String(YEAR) : MS[state.period] + " " + YEAR;
+const paidInPeriod = () => ORDERS.filter(o => o.status === "paid" && inYM(o.paid, periodSel()));
+const prevMonth = () => (state.period === "year" || state.period === 0) ? null : state.period - 1;
+const paidIn = m => ORDERS.filter(o => o.status === "paid" && inYM(o.paid, m));
+const receivedIn = m => ORDERS.filter(o => inYM(o.submit, m));
+
+/* ---------- small UI builders ---------- */
+const info = t => `<button class="info" type="button" aria-label="What is this?" data-tip="${esc(t)}">${ICON.info}</button>`;
+const scopeP = () => `<span class="scope" data-tip="Follows the period selected at the top">${ICON.cal}${periodShort()}</span>`;
+const scopeNow = () => `<span class="scope now" data-tip="Current situation, not affected by the period">${ICON.clock}Today</span>`;
+const scopeTxt = (t, tip) => `<span class="scope now" data-tip="${esc(tip)}">${t}</span>`;
+const head = (title, tip, scope, extra = "") => `<div class="tile-h"><h2>${title}</h2>${info(tip)}${extra}${scope}</div>`;
+const sbar = parts => { const t = sum(parts, p => p.v); return t ? `<div class="sbar">${parts.filter(p => p.v > 0).map(p => `<span style="flex:${p.v};background:${p.c}" data-tip="${esc(p.tip)}"></span>`).join("")}</div>` : ""; };
+/* change vs previous month; good = "up" | "down" | null (neutral) */
+function delta(cur, prev, good, unit = "%") {
+  const pm = prevMonth();
+  if (pm === null || prev === null || prev === undefined || !isFinite(prev)) return "";
+  let txt, dir;
+  if (unit === "%") {
+    if (!prev) return "";
+    const ch = Math.round((cur - prev) / prev * 100);
+    dir = ch > 0 ? "up" : ch < 0 ? "down" : "flat";
+    // big jumps read better as a multiple ("×4.9") than as "+386%"
+    txt = cur / prev >= 3 ? "×" + (cur / prev >= 10 ? Math.round(cur / prev) : (cur / prev).toFixed(1)) : (ch > 0 ? "+" : "") + ch + "%";
+  } else {
+    const ch = Math.round(cur - prev);
+    dir = ch > 0 ? "up" : ch < 0 ? "down" : "flat"; txt = (ch > 0 ? "+" : "") + ch + unit;
+  }
+  const tone = dir === "flat" || !good ? "neutral" : dir === good ? "good" : "bad";
+  const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "■";
+  return `<span class="delta ${tone}" data-tip="Compared with ${MONTHS[pm]} ${YEAR}">${arrow} ${txt}<em>vs ${MS[pm]}</em></span>`;
+}
 
 /* ---------- theme ---------- */
 function applyTheme() {
@@ -539,74 +673,69 @@ function applyTheme() {
 
 /* =================== DASHBOARD =================== */
 function renderPeriods() {
-  const has = m => ORDERS.some(o => o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === m);
+  const has = m => ORDERS.some(o => inYM(o.paid, m) || inYM(o.submit, m));
   $("periods").innerHTML =
     `<button class="year${state.period === "year" ? " on" : ""}" data-period="year" role="tab" aria-selected="${state.period === "year"}" data-tip="Whole year ${YEAR}">${YEAR}</button>` +
-    MS.map((m, i) => `<button class="${state.period === i ? "on" : ""}${has(i) ? "" : " empty"}" data-period="${i}" role="tab" aria-selected="${state.period === i}" data-tip="${MONTHS[i]} ${YEAR}${has(i) ? "" : " · no paid invoices"}">${m}</button>`).join("");
-}
-
-/* previous period for "vs last month" (only when a month is selected) */
-const prevMonth = () => (state.period === "year" || state.period === 0) ? null : state.period - 1;
-const paidIn = m => ORDERS.filter(o => o.status === "paid" && o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === m);
-const receivedIn = m => ORDERS.filter(o => D(o.submit).getFullYear() === YEAR && D(o.submit).getMonth() === m);
-/* delta chip; good = "up" | "down" | null (neutral) */
-function delta(cur, prev, good, unit = "%") {
-  const pm = prevMonth();
-  if (pm === null || prev === null || prev === undefined || !isFinite(prev)) return "";
-  let txt, dir;
-  if (unit === "%") {
-    if (!prev) return "";
-    const ch = Math.round((cur - prev) / prev * 100);
-    dir = ch > 0 ? "up" : ch < 0 ? "down" : "flat";
-    // big jumps read better as a multiple (e.g. "×4.9") than as "+386%"
-    txt = cur / prev >= 3 ? "×" + (cur / prev >= 10 ? Math.round(cur / prev) : (cur / prev).toFixed(1)) : (ch > 0 ? "+" : "") + ch + "%";
-  } else {
-    const ch = Math.round(cur - prev);
-    dir = ch > 0 ? "up" : ch < 0 ? "down" : "flat"; txt = (ch > 0 ? "+" : "") + ch + unit;
-  }
-  const tone = dir === "flat" || !good ? "neutral" : dir === good ? "good" : "bad";
-  const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "■";
-  return `<span class="delta ${tone}" data-tip="Compared with ${MONTHS[pm]} ${YEAR}">${arrow} ${txt}<em>vs ${MS[pm]}</em></span>`;
+    MS.map((m, i) => `<button class="${state.period === i ? "on" : ""}${has(i) ? "" : " empty"}" data-period="${i}" role="tab" aria-selected="${state.period === i}" data-tip="${MONTHS[i]} ${YEAR}${has(i) ? "" : " · no data yet"}">${m}</button>`).join("");
 }
 
 function tileTotal(paid) {
   const tot = sum(paid, o => o.value);
   const rows = SEGS.map(s => { const g = paid.filter(o => o.seg === s.k); return { ...s, n: g.length, v: sum(g, o => o.value) }; });
-  const pm = prevMonth(), prev = pm === null ? null : paidIn(pm);
-  const top = paid.slice().sort((a, b) => b.value - a.value)[0];
-  $("t-total").innerHTML = `
-    <div class="tile-h"><h2>Total paid</h2><span class="hint">${periodName()}</span></div>
+  const pm = prevMonth();
+  $("t-total").innerHTML = head("Total paid", "Total BAST value of invoices whose paid date falls in the selected period.", scopeP()) + `
     <div><div class="big">${rpS(tot)}</div>
-      <div class="big-sub"><b>${paid.length}</b> ${paid.length === 1 ? "invoice" : "invoices"} paid ${prev ? delta(tot, sum(prev, o => o.value), "up") : ""}</div></div>
-    ${paid.length ? `<div class="mini">
-      <div><span>Avg per invoice</span><b>${rpS(tot / paid.length)}</b></div>
-      <div data-tip="${esc(`<b>${top.partner}</b><br>${top.desc}<br>${rp(top.value)}`)}"><span>Largest payment</span><b>${rpS(top.value)}</b></div>
-    </div>` : ""}
-    <div class="split">${rows.map(r => `
-      <div class="split-row" data-tip="${esc(`<b>${r.label}</b><br>${rp(r.v)}<br>${r.n} invoices · ${pct(r.v, tot)}% of value`)}">
-        <div class="lbl"><span><i style="background:${r.col}"></i>${r.label}</span><b>${rpS(r.v)}<em>${r.n} inv.</em></b></div>
-        <div class="meter"><span style="width:${tot ? r.v / tot * 100 : 0}%;background:${r.col}"></span></div>
-      </div>`).join("")}</div>`;
+      <div class="line"><span><b>${paid.length}</b> ${paid.length === 1 ? "invoice" : "invoices"} paid</span>${pm === null ? "" : delta(tot, sum(paidIn(pm), o => o.value), "up")}</div></div>
+    ${sbar(rows.map(r => ({ v: r.v, c: r.col, tip: `${r.label}: ${rp(r.v)} · ${r.n} invoices · ${pct(r.v, tot)}%` })))}
+    <div class="tile-foot">
+      <div class="lg">${rows.map(r => `<span><i style="background:${r.col}"></i>${r.label} <b>${rpS(r.v)}</b></span>`).join("")}</div>
+      ${paid.length ? `<button class="link" data-act="paid">View →</button>` : ""}
+    </div>`;
 }
 
 function tileReceived() {
-  const rec = ORDERS.filter(inSubmitPeriod);
-  const rows = SEGS.map(sg => { const g = rec.filter(o => o.seg === sg.k); return { ...sg, n: g.length, v: sum(g, o => o.value) }; });
-  const st = [["paid", "var(--good)"], ["review", "var(--warn)"], ["returned", "var(--bad)"]].map(([k, c]) => ({ k, c, n: rec.filter(o => o.status === k).length }));
+  const rec = ORDERS.filter(o => inYM(o.submit, periodSel()));
+  const rows = SEGS.map(s => { const g = rec.filter(o => o.seg === s.k); return { ...s, n: g.length, v: sum(g, o => o.value) }; });
+  const paidN = rec.filter(o => o.status === "paid").length;
   const pm = prevMonth();
-  $("t-received").innerHTML = `
-    <div class="tile-h"><h2>Invoices received</h2><button class="link" data-received="1">See list →</button></div>
+  $("t-received").innerHTML = head("Invoices received", "Invoices whose submit date falls in the selected period, and how many of them are already paid.", scopeP()) + `
     <div><div class="big">${rec.length}<small>${rec.length === 1 ? "invoice" : "invoices"}</small></div>
-      <div class="big-sub">submitted in <b>${periodName()}</b> · ${rpS(sum(rec, o => o.value))} ${pm === null ? "" : delta(rec.length, receivedIn(pm).length, null)}</div></div>
-    ${rec.length ? `<div class="stack">
-      <div class="stack-bar">${st.filter(x => x.n).map(x => `<span style="flex:${x.n};background:${x.c}" data-tip="${STATUS[x.k]}: ${x.n} of ${rec.length} (${pct(x.n, rec.length)}%)"></span>`).join("")}</div>
-      <div class="stack-lg">${st.map(x => `<span><i style="background:${x.c}"></i>${STATUS[x.k]} <b>${x.n}</b></span>`).join("")}</div>
-    </div>` : ""}
-    <div class="split">${rows.map(r => `
-      <div class="split-row" data-tip="${esc(`<b>${r.label}</b><br>${r.n} invoices received · ${rp(r.v)}`)}">
-        <div class="lbl"><span><i style="background:${r.col}"></i>${r.label}</span><b>${r.n}<em>${rpS(r.v)}</em></b></div>
-        <div class="meter"><span style="width:${rec.length ? r.n / rec.length * 100 : 0}%;background:${r.col}"></span></div>
+      <div class="line"><span><b>${rpS(sum(rec, o => o.value))}</b></span><span>·</span><span><b>${pct(paidN, rec.length)}%</b> already paid</span>${pm === null ? "" : delta(rec.length, receivedIn(pm).length, null)}</div></div>
+    ${sbar(rows.map(r => ({ v: r.n, c: r.col, tip: `${r.label}: ${r.n} invoices · ${rp(r.v)}` })))}
+    <div class="tile-foot">
+      <div class="lg">${rows.map(r => `<span><i style="background:${r.col}"></i>${r.label} <b>${r.n}</b></span>`).join("")}</div>
+      ${rec.length ? `<button class="link" data-act="received">View →</button>` : ""}
+    </div>`;
+}
+
+function tileDays(paid) {
+  const pm = prevMonth(), prev = pm === null ? null : paidIn(pm);
+  const cells = SEGS.map(s => {
+    const g = paid.filter(o => o.seg === s.k), pg = prev ? prev.filter(o => o.seg === s.k) : [];
+    const leads = g.map(o => o.lead).sort((a, b) => a - b);
+    return { ...s, n: g.length, a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null, min: leads[0], max: leads[leads.length - 1] };
+  });
+  $("t-days").innerHTML = head("Average days to get paid", "From submit date to paid date, in calendar days, for invoices paid in the selected period. Lower is better.", scopeP()) + `
+    <div class="duo">${cells.map(c => `
+      <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
+        <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
+        <div class="n">${c.n ? `<span>${plural(c.n, "invoice")} · range <b>${c.min}–${c.max}d</b></span>` : "None paid"}${c.a !== null && c.pa !== null ? delta(c.a, c.pa, "down", "d") : ""}</div>
       </div>`).join("")}</div>`;
+}
+
+function tileOpen() {
+  const open = ORDERS.filter(o => o.status !== "paid");
+  const ret = open.filter(o => o.status === "returned"), rev = open.filter(o => o.status === "review");
+  const t = $("t-open");
+  t.classList.toggle("alert", ret.length > 0);
+  t.innerHTML = head("Not paid yet", "Invoices that are still in review or were returned to the partner, regardless of the period.", scopeNow(),
+      ret.length ? `<span class="alert-dot" data-tip="${ret.length} returned invoices need follow-up">!</span>` : "") + `
+    <div><div class="big">${open.length}<small>invoices</small></div>
+      <div class="line"><span><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</span></div></div>
+    <div class="stbtns">
+      <button data-go="returned" data-tip="Open the ${ret.length} returned invoices">${chip("returned")}<div class="row"><span class="cnt">${ret.length}</span><span class="val">${rpS(sum(ret, o => o.value))}</span></div></button>
+      <button data-go="review" data-tip="Open the ${rev.length} invoices in review">${chip("review")}<div class="row"><span class="cnt">${rev.length}</span><span class="val">${rpS(sum(rev, o => o.value))}</span></div></button>
+    </div>`;
 }
 
 function niceMax(v) {
@@ -615,19 +744,17 @@ function niceMax(v) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
 }
 function tileTrend() {
-  const mode = state.trendMode;   // "received" | "value" | "count"
+  const mode = state.trendMode;   // "value" | "count" | "received"
   const rec = mode === "received";
   const data = MS.map((_, m) => {
-    const g = rec
-      ? ORDERS.filter(o => D(o.submit).getFullYear() === YEAR && D(o.submit).getMonth() === m)
-      : ORDERS.filter(o => o.status === "paid" && o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === m);
+    const g = rec ? receivedIn(m) : paidIn(m);
     const by = SEGS.map(s => { const x = g.filter(o => o.seg === s.k); return { n: x.length, v: sum(x, o => o.value) }; });
     return { m, by, n: g.length, v: sum(g, o => o.value) };
   });
   const val = (d, i) => mode === "value" ? d.by[i].v : d.by[i].n;
   const tot = d => mode === "value" ? d.v : d.n;
   const max = niceMax(Math.max(...data.map(tot)));
-  const W = 760, H = 250, L = 56, R = 8, T = 22, B = 26;
+  const W = 760, H = 250, L = 52, R = 8, T = 22, B = 26;
   const bw = (W - L - R) / 12, x = m => L + m * bw, y = v => T + (1 - v / max) * (H - T - B);
   const fmt = v => mode === "value" ? rpS(v).replace("Rp ", "") : String(v);
   let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${rec ? "Invoices received per month" : "Paid per month"}">`;
@@ -646,71 +773,24 @@ function tileTrend() {
       const yTop = y(acc + p.v), yBot = y(acc) - gap;
       const h = Math.max(1.5, yBot - yTop);
       const isTop = j === parts.length - 1;
-      // rounded top on the last segment only: draw rect + square-off the bottom corners
       s += `<rect x="${cx}" y="${yBot - h}" width="${w}" height="${h}" rx="${isTop ? 4 : 0}" fill="${p.sg.col}" opacity="${dim ? .28 : 1}"/>`;
       if (isTop && h > 4) s += `<rect x="${cx}" y="${yBot - 4}" width="${w}" height="4" fill="${p.sg.col}" opacity="${dim ? .28 : 1}"/>`;
       acc += p.v;
     });
     if (tot(d)) s += `<text x="${cx + w / 2}" y="${y(tot(d)) - 6}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)" opacity="${dim ? .4 : 1}">${fmt(tot(d))}</text>`;
     s += `<text x="${cx + w / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" font-weight="${state.period === d.m ? 800 : 500}" fill="${state.period === d.m ? "var(--ink)" : "var(--ink-2)"}">${MS[d.m]}</text>`;
-    const tip = `<b>${MONTHS[d.m]} ${YEAR}</b> · ${rec ? "received" : "paid"}<br>` + (d.n ? SEGS.map((sg, i) => `${sg.label}: ${d.by[i].n} inv. · ${rpS(d.by[i].v)}`).join("<br>") + `<br>Total: ${d.n} inv. · ${rp(d.v)}` : rec ? "No invoices received" : "No invoices paid") + `<br><i>Click to view this month</i>`;
+    const tip = `<b>${MONTHS[d.m]} ${YEAR}</b> · ${rec ? "received" : "paid"}<br>` + (d.n ? SEGS.map((sg, i) => `${sg.label}: ${d.by[i].n} inv. · ${rpS(d.by[i].v)}`).join("<br>") + `<br>Total: ${d.n} inv. · ${rp(d.v)}` : rec ? "No invoices received" : "No invoices paid") + `<br><i>Click to show this month</i>`;
     s += `<rect x="${x(d.m)}" y="${T}" width="${bw}" height="${H - T}" fill="transparent" data-period="${d.m}" data-tip="${esc(tip)}" style="cursor:pointer"/>`;
   });
   s += "</svg>";
-  $("t-trend").innerHTML = `
-    <div class="tile-h"><h2>${rec ? "Invoices received per month" : "Paid per month"}</h2>
-      <div class="legend">${SEGS.map(sg => `<span><i style="background:${sg.col}"></i>${sg.label}</span>`).join("")}
-        <span class="seg"><button class="${mode === "value" ? "on" : ""}" data-trend="value">Paid value</button><button class="${mode === "count" ? "on" : ""}" data-trend="count">Paid count</button><button class="${rec ? "on" : ""}" data-trend="received">Received</button></span>
-      </div>
+  const title = rec ? "Invoices received per month" : mode === "count" ? "Invoices paid per month" : "Paid per month";
+  const tipTxt = rec ? "Number of invoices by submit month." : mode === "count" ? "Number of invoices by paid month." : "Total BAST value by paid month.";
+  $("t-trend").innerHTML = head(title, tipTxt + " Click a bar to show that month on the whole dashboard.", scopeTxt(`${ICON.cal}Jan–Dec ${YEAR}`, "Always shows the whole year")) + `
+    <div class="trend-ctl">
+      <div class="lg">${SEGS.map(sg => `<span><i style="background:${sg.col}"></i>${sg.label}</span>`).join("")}</div>
+      <span class="seg" role="tablist" aria-label="Chart shows"><button class="${mode === "value" ? "on" : ""}" data-trend="value">Paid value</button><button class="${mode === "count" ? "on" : ""}" data-trend="count">Paid count</button><button class="${rec ? "on" : ""}" data-trend="received">Received</button></span>
     </div>
     <div class="chart">${s}</div>`;
-}
-
-const WAIT = [
-  { l: "≤ 30 d", t: d => d <= 30, c: "var(--age-1)" },
-  { l: "31–60 d", t: d => d > 30 && d <= 60, c: "var(--age-2)" },
-  { l: "61–90 d", t: d => d > 60 && d <= 90, c: "var(--age-3)" },
-  { l: "> 90 d", t: d => d > 90, c: "var(--age-4)" },
-];
-function tileOpen() {
-  const open = ORDERS.filter(o => o.status !== "paid");
-  const ret = open.filter(o => o.status === "returned"), rev = open.filter(o => o.status === "review");
-  const w = WAIT.map(b => ({ ...b, n: open.filter(o => b.t(o.waiting)).length }));
-  const t = $("t-open");
-  t.classList.toggle("alert", ret.length > 0);
-  t.innerHTML = `
-    ${ret.length ? `<span class="alert-dot" data-tip="${ret.length} invoices were returned and need action">!</span>` : ""}
-    <div class="tile-h"><h2>Not paid yet</h2><span class="hint" style="margin-right:${ret.length ? 34 : 0}px">As of ${fmtD(TODAY)}</span></div>
-    <div><div class="big">${open.length}<small>invoices</small></div><div class="big-sub"><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</div></div>
-    ${open.length ? `<div class="stack">
-      <div class="stack-cap">Waiting since submit</div>
-      <div class="stack-bar">${w.filter(x => x.n).map(x => `<span style="flex:${x.n};background:${x.c}" data-tip="${x.l}: ${x.n} invoices"></span>`).join("")}</div>
-      <div class="stack-lg">${w.map(x => `<span><i style="background:${x.c}"></i>${x.l} <b>${x.n}</b></span>`).join("")}</div>
-    </div>` : ""}
-    <div class="status-rows">
-      <button data-go="returned">${chip("returned")}<span class="val">${rpS(sum(ret, o => o.value))}</span><span class="cnt">${ret.length}</span></button>
-      <button data-go="review">${chip("review")}<span class="val">${rpS(sum(rev, o => o.value))}</span><span class="cnt">${rev.length}</span></button>
-    </div>`;
-}
-
-function tileDays(paid) {
-  const pm = prevMonth(), prev = pm === null ? null : paidIn(pm);
-  const cells = SEGS.map(s => {
-    const g = paid.filter(o => o.seg === s.k), pg = prev ? prev.filter(o => o.seg === s.k) : [];
-    const leads = g.map(o => o.lead).sort((a, b) => a - b);
-    return { ...s, n: g.length, a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null,
-      min: leads[0], max: leads[leads.length - 1] };
-  });
-  $("t-days").innerHTML = `
-    <div class="tile-h"><h2>Average days to get paid</h2></div>
-    <div class="foot-note" style="margin-top:-6px">From submit invoice date to paid date</div>
-    <div class="duo">${cells.map(c => `
-      <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
-        <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
-        <div class="n">${c.n ? plural(c.n, "invoice") + " paid" : "None paid"}</div>
-        ${c.n ? `<div class="n">Fastest <b>${c.min}d</b> · slowest <b>${c.max}d</b></div>` : ""}
-        ${c.a !== null && c.pa !== null ? `<div style="margin-top:6px">${delta(c.a, c.pa, "down", "d")}</div>` : ""}
-      </div>`).join("")}</div>`;
 }
 
 const BUCKETS = [
@@ -723,14 +803,54 @@ const BUCKETS = [
 function tileSpeed(paid) {
   const rows = BUCKETS.map(b => ({ ...b, n: paid.filter(o => b.t(o.lead)).length }));
   const max = Math.max(1, ...rows.map(r => r.n));
-  $("t-speed").innerHTML = `
-    <div class="tile-h"><h2>How fast invoices were paid</h2></div>
-    ${paid.length ? `<div class="bars">${rows.map(r => `
+  $("t-speed").innerHTML = head("How fast invoices were paid", "Invoices paid in the selected period, grouped by days from submit to paid.", scopeP()) +
+    (paid.length ? `<div class="bars">${rows.map(r => `
       <div class="row" data-tip="${esc(`<b>${r.l}</b> (${r.s})<br>${r.n} invoices · ${pct(r.n, paid.length)}%`)}">
         <div class="l"><b>${r.l}</b><span>${r.s}</span></div>
         <div class="track"><span style="width:${r.n / max * 100}%"></span></div>
         <div class="v">${r.n}<em>${pct(r.n, paid.length)}%</em></div>
-      </div>`).join("")}</div>` : `<p class="empty-note">No invoices paid in ${periodName()}.</p>`}`;
+      </div>`).join("")}</div>` : `<p class="empty-note">No invoices paid in ${periodName()}.</p>`);
+}
+
+function tilePartners(paid) {
+  const map = {};
+  paid.forEach(o => { const m = map[o.partner] = map[o.partner] || { p: o.partner, v: 0, n: 0, seg: o.seg }; m.v += o.value; m.n++; });
+  const list = Object.values(map).sort((a, b) => b.v - a.v);
+  const top = list.slice(0, 9), max = top.length ? top[0].v : 1, tot = sum(list, x => x.v);
+  $("t-partners").innerHTML = head("Top partners by paid value", "Partners ranked by the total BAST value paid in the selected period.", scopeP()) +
+    (top.length ? `<div class="plist">${top.map(x => `
+      <button data-partner="${esc(x.p)}" data-tip="${esc(`<b>${x.p}</b><br>${rp(x.v)} · ${pct(x.v, tot)}% of total<br>${x.n} invoices paid<br><i>Click to see the invoices</i>`)}">
+        <div class="top"><span>${esc(x.p)}</span><b>${rpS(x.v)}</b></div>
+        <div class="meter"><span style="width:${x.v / max * 100}%;background:${x.seg === "Inbound" ? "var(--in)" : "var(--out)"}"></span></div>
+        <div class="meta"><span>${x.seg}</span><span>${x.n} inv. · ${pct(x.v, tot)}%</span></div>
+      </button>`).join("")}</div>
+      <div class="tile-foot"><span class="hint">${list.length} partners · click a name to see its invoices</span></div>` : `<p class="empty-note">No invoices paid in ${periodName()}.</p>`);
+}
+
+const WAIT = [
+  { l: "≤ 30 d", t: d => d <= 30, c: "var(--age-1)" },
+  { l: "31–60 d", t: d => d > 30 && d <= 60, c: "var(--age-2)" },
+  { l: "61–90 d", t: d => d > 60 && d <= 90, c: "var(--age-3)" },
+  { l: "> 90 d", t: d => d > 90, c: "var(--age-4)" },
+];
+function tileWaiting() {
+  const open = ORDERS.filter(o => o.status !== "paid");
+  const w = WAIT.map(b => ({ ...b, n: open.filter(o => b.t(o.waiting)).length }));
+  const list = open.slice().sort((a, b) => b.waiting - a.waiting).slice(0, 3);
+  $("t-waiting").innerHTML = head("Waiting longest for payment", "Invoices not paid yet, by days since submit. The bar groups all of them; the list shows the oldest.", scopeNow()) + `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="cap">Days waiting since submit · ${open.length} invoices</div>
+      ${sbar(w.map(x => ({ v: x.n, c: x.c, tip: `${x.l}: ${x.n} invoices` })))}
+      <div class="lg">${w.map(x => `<span><i style="background:${x.c}"></i>${x.l} <b>${x.n}</b></span>`).join("")}</div>
+    </div>
+    <div class="wlist">${list.map(o => `
+      <button data-id="${o.no}">
+        <span class="st">${chip(o.status)}</span>
+        <span class="who"><b>${esc(o.partner)}</b><span>${esc(o.desc)}</span></span>
+        <span class="amt">${rp(o.value)}</span>
+        <span class="age"><b>${o.waiting}</b><span>days waiting</span></span>
+      </button>`).join("")}</div>
+    <div class="tile-foot"><span class="hint">Click an invoice to see its timeline</span><button class="link" data-go="unpaid">View all ${open.length} →</button></div>`;
 }
 
 function tileReturns() {
@@ -739,77 +859,60 @@ function tileReturns() {
   const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
   const paidR = withR.filter(o => o.paid);
   const ag = { rev: avg(withR, o => o.aging.rev), fix: avg(withR, o => o.aging.fix), pay: avg(paidR, o => o.aging.pay) };
-  const tot = ag.rev + ag.fix + ag.pay || 1;
-  const lbl = { rev: "In review", fix: "Partner fixing", pay: "To payment" };
-  $("t-returns").innerHTML = `
-    <div class="tile-h"><h2>Return history</h2><button class="link" data-hist="1">See invoices →</button></div>
-    <div><div class="big">${cycles.length}<small>returns</small></div><div class="big-sub">on <b>${withR.length}</b> outbound invoices with recorded dates</div></div>
-    <div class="stack">
-      <div class="stack-cap">Where the time goes (avg days per invoice)</div>
-      <div class="stack-bar">${["rev", "fix", "pay"].map(k => `<span style="flex:${ag[k]};background:${STAGE[k].c}" data-tip="${lbl[k]}: ${Math.round(ag[k])} days on average"></span>`).join("")}</div>
-      <div class="stack-lg">${["rev", "fix", "pay"].map(k => `<span><i style="background:${STAGE[k].c}"></i>${lbl[k]} <b>${Math.round(ag[k])}d</b></span>`).join("")}</div>
+  $("t-returns").innerHTML = head("Return history", "Invoices with recorded return and resubmit dates. Shows where the time went: TDE review, partner fixing, and payment.", scopeTxt(`${ICON.rec}${withR.length} recorded`, "Only invoices with return dates on record")) + `
+    <div><div class="big">${cycles.length}<small>returns</small></div>
+      <div class="line"><span>on <b>${withR.length}</b> outbound invoices · partner needs <b>${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> per fix</span></div></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="cap">Where the time goes (avg days per invoice)</div>
+      ${sbar(["rev", "fix", "pay"].map(k => ({ v: ag[k], c: STAGE[k].c, tip: `${STAGE[k].l}: ${Math.round(ag[k])} days on average` })))}
+      <div class="lg">${["rev", "fix", "pay"].map(k => `<span><i style="background:${STAGE[k].c}"></i>${STAGE[k].l} <b>${Math.round(ag[k])}d</b></span>`).join("")}</div>
     </div>
-    <div class="foot-note">Partner takes <b style="color:var(--ink)">${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> on average to fix a returned invoice. Return dates are recorded for these ${withR.length} invoices only.</div>`;
-}
-
-function tilePartners(paid) {
-  const map = {};
-  paid.forEach(o => { const m = map[o.partner] = map[o.partner] || { p: o.partner, v: 0, n: 0, seg: o.seg }; m.v += o.value; m.n++; });
-  const list = Object.values(map).sort((a, b) => b.v - a.v);
-  const top = list.slice(0, 8), max = top.length ? top[0].v : 1, tot = sum(list, x => x.v);
-  $("t-partners").innerHTML = `
-    <div class="tile-h"><h2>Top partners by paid value</h2><span class="hint">${list.length} partners</span></div>
-    ${top.length ? `<div class="plist">${top.map(x => `
-      <button data-partner="${esc(x.p)}" data-tip="${esc(`<b>${x.p}</b><br>${rp(x.v)} · ${pct(x.v, tot)}% of total<br>${x.n} invoices paid<br><i>Click to see the invoices</i>`)}">
-        <div class="top"><span>${esc(x.p)}</span><b>${rpS(x.v)}</b></div>
-        <div class="meter"><span style="width:${x.v / max * 100}%;background:${x.seg === "Inbound" ? "var(--in)" : "var(--out)"}"></span></div>
-        <div class="meta"><span>${x.seg}</span><span>${x.n} inv. · ${pct(x.v, tot)}%</span></div>
-      </button>`).join("")}</div>` : `<p class="empty-note">No invoices paid in ${periodName()}.</p>`}`;
-}
-
-function tileWaiting() {
-  const open = ORDERS.filter(o => o.status !== "paid").sort((a, b) => b.waiting - a.waiting).slice(0, 4);
-  $("t-waiting").innerHTML = `
-    <div class="tile-h"><h2>Waiting longest for payment</h2><button class="link" data-go="open">See all unpaid →</button></div>
-    <div class="wlist">${open.map(o => `
-      <button data-id="${o.no}">
-        <span class="st">${chip(o.status)}</span>
-        <span class="who"><b>${esc(o.partner)}</b><span>${esc(o.desc)}</span></span>
-        <span class="amt">${rp(o.value)}</span>
-        <span class="age"><b>${o.waiting}</b><span>days waiting</span></span>
-      </button>`).join("")}</div>`;
+    <div style="display:flex;flex-direction:column;gap:4px;min-height:0">
+      <div class="cap">Returned most often</div>
+      <div class="rlist">${withR.slice().sort((a, b) => b.cycles.length - a.cycles.length || b.aging.fix - a.aging.fix).slice(0, 2).map(o => `
+        <button data-id="${o.no}" data-tip="Click to see the timeline"><b>${o.cycles.length}×</b><span><em>${esc(o.partner)}</em>${esc(o.desc)}</span></button>`).join("")}</div>
+    </div>
+    <div class="tile-foot"><span class="hint">Dates are recorded for these ${withR.length} only</span><button class="link" data-go="history">View →</button></div>`;
 }
 
 function renderDash() {
-  const paid = ORDERS.filter(inPeriod);
-  $("d-sub").innerHTML = `Showing <b>${periodName()}</b>${state.period === "year" ? " · pick a month to zoom in" : ` · <button class="link" data-period="year">Back to full year</button>`}`;
-  renderPeriods(); tileTotal(paid); tileReceived(); tileTrend(); tileOpen(); tileDays(paid); tileSpeed(paid); tileReturns(); tilePartners(paid); tileWaiting();
+  const paid = paidInPeriod();
+  $("d-sub").innerHTML = `Showing <b>${periodName()}</b>: payments, incoming invoices and what is still waiting.` +
+    (state.period === "year" ? "" : ` <button class="link" data-period="year">Back to full year</button>`);
+  renderPeriods(); tileTotal(paid); tileReceived(); tileDays(paid); tileOpen(); tileTrend(); tileSpeed(paid); tilePartners(paid); tileWaiting(); tileReturns();
 }
 
-/* =================== TABLE =================== */
+/* =================== INVOICES =================== */
 const PRESETS = {
-  all: { title: "All invoices" },
-  outbound: { title: "Outbound invoices", kind: "outbound" },
-  inbound: { title: "Inbound invoices", kind: "inbound" },
-  returned: { title: "Returned invoices", status: "returned" },
-  review: { title: "Invoices in review", status: "review" },
-  open: { title: "Unpaid invoices", month: "unpaid" },
+  all: { title: "All invoices", crumb: "Invoices", desc: "Every invoice in the data, paid and not paid yet. Click a row to see its timeline." },
+  outbound: { title: "Outbound", crumb: "Invoices · By type", desc: "Invoices from partners for outbound work: Cross Connect and Colocation.", f: { kind: "outbound" } },
+  inbound: { title: "Inbound", crumb: "Invoices · By type", desc: "Invoices for inbound work (Project Delta).", f: { kind: "inbound" } },
+  paid: { title: "Paid", crumb: "Invoices · By status", desc: "Invoices that have been paid.", f: { status: "paid" } },
+  review: { title: "In review", crumb: "Invoices · By status", desc: "Submitted and not paid yet. Documents are being checked or processed.", f: { status: "review" } },
+  returned: { title: "Returned", crumb: "Invoices · By status", desc: "Sent back to the partner to fix. These need follow-up.", f: { status: "returned" } },
+  unpaid: { title: "Not paid yet", crumb: "Invoices · By status", desc: "Everything in review or returned, oldest first.", f: { status: "unpaid" }, sort: { key: "days", dir: -1 } },
+  received: { title: "Invoices received", crumb: "Invoices", desc: "Invoices by the month they were submitted." },
+  history: { title: "Return history", crumb: "Invoices", desc: "Invoices with recorded return and resubmit dates, with their return aging.", f: { hist: true } },
 };
+const KIND_L = { outbound: "Outbound (all)", "out-xc": "Outbound · Cross Connect", "out-colo": "Outbound · Colocation", inbound: "Inbound" };
+const STATUS_L = { paid: "Paid", unpaid: "Not paid yet", review: "In review", returned: "Returned" };
+const monthL = v => v === "year" ? "All of " + YEAR : MONTHS[+v] + " " + YEAR;
+
 function fillSelects() {
   const partners = [...new Set(ORDERS.map(o => o.partner))].sort((a, b) => a.localeCompare(b));
   $("f-partner").innerHTML = `<option value="all">All partners (${partners.length})</option>` + partners.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
-  $("f-smonth").innerHTML = `<option value="all">Any</option><option value="year">All of ${YEAR}</option>` + MONTHS.map((m, i) => `<option value="${i}">${m} ${YEAR}</option>`).join("");
-  $("f-month").innerHTML = `<option value="all">Any</option><option value="unpaid">Not paid yet</option>` + MONTHS.map((m, i) => `<option value="${i}">${m} ${YEAR}</option>`).join("");
+  const opts = `<option value="all">Any time</option><option value="year">All of ${YEAR}</option>` + MONTHS.map((m, i) => `<option value="${i}">${m} ${YEAR}</option>`).join("");
+  $("f-smonth").innerHTML = opts; $("f-month").innerHTML = opts;
 }
 function tableRows() {
   const f = state.f, q = f.q.trim().toLowerCase();
-  let rows = ORDERS.filter(o =>
+  const rows = ORDERS.filter(o =>
     (f.kind === "all" || (f.kind === "outbound" && o.seg === "Outbound") || (f.kind === "inbound" && o.seg === "Inbound") ||
       (f.kind === "out-xc" && o.project === "Cross Connect") || (f.kind === "out-colo" && o.project === "Colocation")) &&
     (f.partner === "all" || o.partner === f.partner) &&
-    (f.status === "all" || o.status === f.status) &&
-    (f.month === "all" || (f.month === "unpaid" ? !o.paid : (o.paid && D(o.paid).getFullYear() === YEAR && D(o.paid).getMonth() === +f.month))) &&
-    (f.smonth === "all" || (D(o.submit).getFullYear() === YEAR && (f.smonth === "year" || D(o.submit).getMonth() === +f.smonth))) &&
+    (f.status === "all" || (f.status === "unpaid" ? o.status !== "paid" : o.status === f.status)) &&
+    (f.smonth === "all" || inYM(o.submit, f.smonth)) &&
+    (f.month === "all" || inYM(o.paid, f.month)) &&
     (!f.hist || o.cycles.length) &&
     (!q || (o.partner + " " + o.desc + " " + o.inv + " " + o.contract).toLowerCase().includes(q)));
   const { key, dir } = state.sort;
@@ -817,6 +920,7 @@ function tableRows() {
   rows.sort((a, b) => { const x = get(a), y = get(b); return (x > y ? 1 : x < y ? -1 : a.no - b.no) * dir; });
   return rows;
 }
+const sq = k => `<i style="background:${STAGE[k].c}"></i>`;
 function rowHtml(o) {
   const dash = `<span class="muted">—</span>`;
   let ret = dash, res = dash, aging = dash, after = "";
@@ -831,11 +935,11 @@ function rowHtml(o) {
     });
     ret = `<div class="cy">${rl.join("")}</div>`;
     res = `<div class="cy">${sl.join("")}</div>`;
-    const ag = o.aging, tot = ag.rev + ag.fix + ag.pay || 1;
+    const ag = o.aging;
     const lbl = { rev: "Review", fix: "Partner", pay: o.paid ? "Payment" : "Waiting" };
-    aging = `<div class="aging" data-tip="${esc(`<b>Return aging</b><br>In review: ${ag.rev} days<br>Partner fixing: ${ag.fix} days<br>${o.paid ? "Last resubmit to paid" : "Waiting since last resubmit"}: ${ag.pay} days`)}">
-      <div class="bar">${["rev", "fix", "pay"].filter(k => ag[k] > 0).map(k => `<span style="flex:${ag[k]};background:${STAGE[k].c}"></span>`).join("")}</div>
-      <div class="rows">${["rev", "fix", "pay"].map(k => `${sqr2(k)}<span>${lbl[k]}</span><b>${ag[k]}d</b>`).join("")}</div></div>`;
+    aging = `<div class="aging" data-tip="${esc(`<b>Return aging</b><br>Review: ${ag.rev} days<br>Partner fixing: ${ag.fix} days<br>${o.paid ? "Last resubmit to paid" : "Waiting since last resubmit"}: ${ag.pay} days`)}">
+      ${sbar(["rev", "fix", "pay"].map(k => ({ v: ag[k], c: STAGE[k].c, tip: "" })))}
+      <div class="rows">${["rev", "fix", "pay"].map(k => `${sq(k)}<span>${lbl[k]}</span><b>${ag[k]}d</b>`).join("")}</div></div>`;
     if (o.paid) after = `<span class="after">+${ag.pay}d after ${o.cycles[o.cycles.length - 1][1] ? "resubmit" : "return"}</span>`;
   }
   return `<tr data-id="${o.no}" tabindex="0">
@@ -855,40 +959,56 @@ function rowHtml(o) {
     <td class="r days">${o.paid ? `<b>${o.lead}</b><span>days to pay</span>` : `<b>${o.waiting}</b><span>days waiting</span>`}</td>
   </tr>`;
 }
-const sqr2 = k => `<i style="background:${STAGE[k].c}"></i>`;
+function activeChips() {
+  const f = state.f, c = [];
+  if (f.q.trim()) c.push(["q", "Search", f.q.trim()]);
+  if (f.kind !== "all") c.push(["kind", "Type", KIND_L[f.kind]]);
+  if (f.partner !== "all") c.push(["partner", "Partner", f.partner]);
+  if (f.status !== "all") c.push(["status", "Status", STATUS_L[f.status]]);
+  if (f.smonth !== "all") c.push(["smonth", "Submitted", monthL(f.smonth)]);
+  if (f.month !== "all") c.push(["month", "Paid", monthL(f.month)]);
+  if (f.hist) c.push(["hist", "Only", "with return dates"]);
+  return c.map(([k, l, v]) => `<button class="fchip" data-clear="${k}" aria-label="Remove filter ${esc(l)}"><span>${esc(l)}:</span><b>${esc(v)}</b><i>✕</i></button>`).join("");
+}
 function renderTable() {
-  const f = state.f;
-  $("f-q").value = f.q; $("f-kind").value = f.kind; $("f-partner").value = f.partner; $("f-status").value = f.status; $("f-month").value = String(f.month); $("f-smonth").value = String(f.smonth);
-  $("tb-title").textContent = (PRESETS[state.nav] || PRESETS.all).title;
+  const f = state.f, p = PRESETS[state.nav] || PRESETS.all;
+  $("f-q").value = f.q; $("f-kind").value = f.kind; $("f-partner").value = f.partner; $("f-status").value = f.status;
+  $("f-month").value = String(f.month); $("f-smonth").value = String(f.smonth);
+  $("tb-crumb").textContent = p.crumb; $("tb-title").textContent = p.title; $("tb-desc").textContent = p.desc;
   const rows = tableRows();
-  const paid = rows.filter(o => o.paid);
-  $("tb-sum").innerHTML = `<span><b>${rows.length}</b>invoices</span><span><b>${rpS(sum(rows, o => o.value))}</b>total BAST value</span><span><b>${paid.length}</b>paid</span><span><b>${rows.length - paid.length}</b>not paid yet</span>` +
-    (f.hist ? `<button class="pill-x" data-hist="0">With return dates only ✕</button>` : "");
-  const PAGE = 20, pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const paidN = rows.filter(o => o.paid).length;
+  $("tb-sum").innerHTML = `<span><b>${rows.length}</b>${rows.length === ORDERS.length ? "invoices" : `of ${ORDERS.length} invoices`}</span><span><b>${rpS(sum(rows, o => o.value))}</b>BAST value</span><span><b>${paidN}</b>paid</span><span><b>${rows.length - paidN}</b>not paid yet</span>`;
+  $("tb-chips").innerHTML = activeChips();
+  const pages = Math.max(1, Math.ceil(rows.length / state.per));
   state.page = Math.min(state.page, pages - 1);
-  const slice = rows.slice(state.page * PAGE, state.page * PAGE + PAGE);
-  const th = (k, l, cls = "") => `<th class="sort ${cls}" data-sort="${k}">${l}${state.sort.key === k ? `<span class="dir">${state.sort.dir > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
-  if (!rows.length) { $("tb").innerHTML = `<p class="empty-note" style="padding:40px 16px;text-align:center">No invoices match these filters.</p>`; $("pager").innerHTML = ""; return; }
-  const COLS = [56, 104, 124, 190, 300, 190, 150, 118, 122, 168, 168, 172, 210, 104];
-  const sqr = c => `<i style="background:${STAGE[c].c}"></i>`;
+  const slice = rows.slice(state.page * state.per, state.page * state.per + state.per);
+  const th = (k, l, cls = "") => `<th class="sort ${cls}" data-sort="${k}" title="Sort">${l}${state.sort.key === k ? `<span class="dir">${state.sort.dir > 0 ? "▲" : "▼"}</span>` : ""}</th>`;
+  if (!rows.length) {
+    $("tb").innerHTML = `<div class="empty-box"><b>No invoices match these filters</b>Remove a filter above, or click “Clear filters”.</div>`;
+    $("pager").innerHTML = ""; return;
+  }
+  const COLS = [60, 104, 124, 190, 300, 190, 150, 118, 122, 168, 168, 172, 210, 108];
   $("tb").innerHTML = `<table><colgroup>${COLS.map(w => `<col style="width:${w}px">`).join("")}</colgroup><thead><tr>
       ${th("no", "No")}<th>Type of Work</th><th>Type Project</th><th>Partner</th><th>Description</th><th>Invoice Number</th>
       ${th("value", "BAST Value", "r")}<th>Status</th>${th("submit", "Submit Date")}
       <th>Return Date<small>+d since (re)submit</small></th><th>Resubmit Date<small>+d since return</small></th>${th("paid", "Paid Date")}
-      <th>Return Aging<small><span>${sqr("rev")}Review</span><span>${sqr("fix")}Partner</span><span>${sqr("pay")}Payment</span></small></th>${th("days", "Days", "r")}
-    </tr></thead><tbody>${slice.map(o => rowHtml(o)).join("")}</tbody></table>`;
-  const btn = (p, l, on) => `<button data-page="${p}"${on ? ' class="on"' : ""}${p < 0 || p >= pages ? " disabled" : ""}>${l}</button>`;
-  const nums = []; for (let p = Math.max(0, state.page - 2); p <= Math.min(pages - 1, state.page + 2); p++) nums.push(btn(p, p + 1, p === state.page));
-  $("pager").innerHTML = `<span>Showing ${state.page * PAGE + 1}–${state.page * PAGE + slice.length} of ${rows.length}</span><div class="btns">${btn(state.page - 1, "‹ Prev")}${nums.join("")}${btn(state.page + 1, "Next ›")}</div>`;
+      <th>Return Aging ${info("Only for invoices with return dates. Review = TDE checking before each return, Partner = fixing from return to resubmit, Payment = last resubmit to paid.")}<small><span>${sq("rev")}Review</span><span>${sq("fix")}Partner</span><span>${sq("pay")}Payment</span></small></th>
+      ${th("days", "Days", "r")}
+    </tr></thead><tbody>${slice.map(rowHtml).join("")}</tbody></table>`;
+  const btn = (pg, l, on) => `<button data-page="${pg}"${on ? ' class="on"' : ""}${pg < 0 || pg >= pages ? " disabled" : ""}>${l}</button>`;
+  const nums = []; for (let pg = Math.max(0, state.page - 2); pg <= Math.min(pages - 1, state.page + 2); pg++) nums.push(btn(pg, pg + 1, pg === state.page));
+  $("pager").innerHTML = `<div class="left"><span>Showing ${state.page * state.per + 1}–${state.page * state.per + slice.length} of ${rows.length}</span>
+      <label>Rows per page <select id="f-per">${[20, 50, 100].map(n => `<option${n === state.per ? " selected" : ""}>${n}</option>`).join("")}</select></label></div>
+    <div class="btns">${btn(state.page - 1, "‹ Prev")}${nums.join("")}${btn(state.page + 1, "Next ›")}</div>`;
 }
 
 /* =================== DRAWER =================== */
 function openDrawer(o) {
-  const ev = [{ l: "Submit invoice", d: o.submit, c: "var(--ink-2)" }];
+  const ev = [{ l: "Submitted", d: o.submit, c: "var(--ink-2)" }];
   const multi = o.cycles.length > 1;
   o.cycles.forEach((c, i) => {
     const n = multi ? " #" + (i + 1) : "";
-    ev.push({ l: "Returned" + n, d: c[0], c: "var(--bad)", fill: true, gap: "In review" });
+    ev.push({ l: "Returned" + n, d: c[0], c: "var(--bad)", fill: true, gap: "In review at TDE" });
     ev.push({ l: "Resubmitted" + n, d: c[1], c: "var(--warn)", gap: "Partner fixing documents" });
   });
   if (o.paid) ev.push({ l: "Paid", d: o.paid, c: "var(--good)", fill: true, gap: o.cycles.length ? "Final review to payment" : "Review to payment" });
@@ -913,56 +1033,77 @@ function openDrawer(o) {
       <div class="facts">
         <div class="wide"><span>Partner</span><b>${esc(o.partner)}</b></div>
         <div><span>BAST Value</span><b class="num">${rp(o.value)}</b></div>
-        <div><span>${o.paid ? "Submit → Paid" : "Waiting since submit"}</span><b>${o.paid ? o.lead : o.waiting} days</b></div>
+        <div><span>${o.paid ? "Days to get paid" : "Days waiting"}</span><b>${o.paid ? o.lead : o.waiting} days</b></div>
         <div><span>Invoice Number</span><b>${esc(o.inv)}</b></div>
         <div><span>Contract Number</span><b>${esc(o.contract)}</b></div>
       </div>
+      <h4>Timeline</h4>
       <ol class="steps">${steps}</ol>
-      ${o.cycles.length ? "" : `<p class="foot-note">No return dates recorded for this invoice.</p>`}
+      ${o.cycles.length ? "" : `<p class="foot-note">No return dates are recorded for this invoice.</p>`}
     </div>`;
   $("drawer").hidden = false; $("scrim").hidden = false; $("dr-x").focus();
 }
 function closeDrawer() { $("drawer").hidden = true; $("scrim").hidden = true; }
 
-/* =================== NAV & EVENTS =================== */
-function go(key, extra = {}) {
-  if (key === "dash") { state.view = "dash"; state.nav = "dash"; }
+/* =================== NAVIGATION =================== */
+const ROUTES = ["dashboard", "guide", ...Object.keys(PRESETS)];
+function go(key, extra = {}, push = true) {
+  if (!ROUTES.includes(key)) key = "dashboard";
+  if (key === "dashboard") { state.view = "dash"; state.nav = "dashboard"; }
+  else if (key === "guide") { state.view = "guide"; state.nav = "guide"; }
   else {
-    const p = PRESETS[key] || PRESETS.all;
+    const p = PRESETS[key];
     state.view = "table"; state.nav = key; state.page = 0;
-    state.f = { q: "", kind: p.kind || "all", partner: "all", status: p.status || "all", month: p.month || "all", smonth: "all", hist: false, ...extra };
+    state.f = { ...defaultsF(), ...(p.f || {}), ...extra };
+    state.sort = p.sort ? { ...p.sort } : { key: "submit", dir: -1 };
   }
-  closeDrawer(); render(); $("main").scrollTo({ top: 0 }); $("tb").scrollLeft = 0;
+  if (push) { try { if (location.hash.slice(1) !== key) history.pushState(null, "", "#" + key); } catch (e) {} }
+  closeDrawer(); render();
+  $("main").scrollTo({ top: 0 }); $("tb").scrollTop = 0; $("tb").scrollLeft = 0;
 }
 function render() {
   $("v-dash").hidden = state.view !== "dash";
   $("v-table").hidden = state.view !== "table";
+  $("v-guide").hidden = state.view !== "guide";
   document.querySelectorAll(".nav button[data-go]").forEach(b => b.classList.toggle("active", b.dataset.go === state.nav));
-  if (state.view === "dash") renderDash(); else renderTable();
+  if (state.view === "dash") renderDash(); else if (state.view === "table") renderTable();
+}
+/* a filter change that contradicts the page's own preset turns the page into "All invoices" */
+function setFilter(k, v) {
+  const p = PRESETS[state.nav];
+  state.f[k] = v; state.page = 0;
+  if (p && p.f && k in p.f && p.f[k] !== v) state.nav = "all";
+  document.querySelectorAll(".nav button[data-go]").forEach(b => b.classList.toggle("active", b.dataset.go === state.nav));
+  renderTable();
 }
 
 document.addEventListener("click", e => {
   const t = e.target;
   if (t.closest(".theme-btn")) { state.dark = !state.dark; save("pm2-theme", state.dark ? "dark" : "light"); applyTheme(); return; }
+  if (t.closest(".info")) return;   // info buttons only show their tooltip
   const per = t.closest("[data-period]");
-  if (per) { state.period = per.dataset.period === "year" ? "year" : +per.dataset.period; save("pm2-period", state.period); state.view = "dash"; state.nav = "dash"; render(); return; }
+  if (per) { state.period = per.dataset.period === "year" ? "year" : +per.dataset.period; save("pm2-period", state.period); if (state.view !== "dash") go("dashboard"); else render(); return; }
   const tr = t.closest("[data-trend]");
   if (tr) { state.trendMode = tr.dataset.trend; tileTrend(); return; }
+  const act = t.closest("[data-act]");
+  if (act) {
+    if (act.dataset.act === "paid") go("paid", { month: periodSel() });
+    if (act.dataset.act === "received") go("received", { smonth: periodSel() });
+    return;
+  }
   const g = t.closest("[data-go]");
   if (g) { go(g.dataset.go); return; }
   const pa = t.closest("[data-partner]");
-  if (pa) { go("all", { partner: pa.dataset.partner, status: "paid", month: state.period === "year" ? "all" : String(state.period) }); return; }
-  const rv = t.closest("[data-received]");
-  if (rv) { go("all", { smonth: state.period === "year" ? "year" : String(state.period) }); return; }
-  const hi = t.closest("[data-hist]");
-  if (hi) { if (hi.dataset.hist === "1") go("all", { hist: true }); else { state.f.hist = false; state.page = 0; renderTable(); } return; }
+  if (pa) { go("paid", { partner: pa.dataset.partner, month: periodSel() }); return; }
+  const cl = t.closest("[data-clear]");
+  if (cl) { const k = cl.dataset.clear; setFilter(k, defaultsF()[k]); return; }
   const so = t.closest("[data-sort]");
   if (so) { const k = so.dataset.sort; state.sort = state.sort.key === k ? { key: k, dir: -state.sort.dir } : { key: k, dir: k === "no" ? 1 : -1 }; renderTable(); return; }
   const pg = t.closest("[data-page]");
-  if (pg) { if (!pg.disabled) { state.page = +pg.dataset.page; renderTable(); } return; }
+  if (pg) { if (!pg.disabled) { state.page = +pg.dataset.page; renderTable(); $("tb").scrollTop = 0; } return; }
   const row = t.closest("[data-id]");
   if (row) { openDrawer(ORDERS.find(o => o.no === +row.dataset.id)); return; }
-  if (t.closest("#f-reset")) { go(state.nav === "dash" ? "all" : state.nav); return; }
+  if (t.closest("#f-reset")) { state.nav = "all"; state.f = defaultsF(); state.page = 0; render(); return; }
   if (t.closest("#dr-x") || t.id === "scrim") closeDrawer();
 });
 document.addEventListener("keydown", e => {
@@ -970,35 +1111,47 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.matches("tr[data-id]")) openDrawer(ORDERS.find(o => o.no === +e.target.dataset.id));
 });
 [["f-kind", "kind"], ["f-partner", "partner"], ["f-status", "status"], ["f-month", "month"], ["f-smonth", "smonth"]].forEach(([id, k]) =>
-  $(id).addEventListener("change", e => { state.f[k] = e.target.value; state.page = 0; renderTable(); }));
+  $(id).addEventListener("change", e => setFilter(k, e.target.value)));
 $("f-q").addEventListener("input", e => { state.f.q = e.target.value; state.page = 0; renderTable(); });
+document.addEventListener("change", e => { if (e.target.id === "f-per") { state.per = +e.target.value; state.page = 0; save("pm2-per", state.per); renderTable(); } });
+window.addEventListener("popstate", () => go(location.hash.slice(1), {}, false));
 
+/* tooltips: hover, and keyboard focus for info buttons */
 const tip = $("tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let px = x + 14, py = y + 14;
+  if (px + w > innerWidth - 8) px = x - w - 14;
+  if (py + h > innerHeight - 8) py = y - h - 14;
+  tip.style.left = Math.max(8, px) + "px"; tip.style.top = Math.max(8, py) + "px";
+}
 document.addEventListener("mousemove", e => {
   const t = e.target.closest && e.target.closest("[data-tip]");
-  if (!t) { tip.hidden = true; return; }
-  tip.innerHTML = t.getAttribute("data-tip"); tip.hidden = false;
-  const w = tip.offsetWidth, h = tip.offsetHeight;
-  let x = e.clientX + 14, y = e.clientY + 14;
-  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
-  if (y + h > innerHeight - 8) y = e.clientY - h - 14;
-  tip.style.left = x + "px"; tip.style.top = y + "px";
+  if (!t || !t.getAttribute("data-tip")) { tip.hidden = true; return; }
+  showTip(t.getAttribute("data-tip"), e.clientX, e.clientY);
 });
+document.addEventListener("focusin", e => {
+  const t = e.target.closest && e.target.closest(".info, .scope");
+  if (!t) { tip.hidden = true; return; }
+  const r = t.getBoundingClientRect(); showTip(t.getAttribute("data-tip"), r.left, r.bottom);
+});
+document.addEventListener("focusout", () => { tip.hidden = true; });
 
-/* counts in the sidebar */
+/* sidebar counts + last update */
 $("c-all").textContent = ORDERS.length;
 $("c-out").textContent = ORDERS.filter(o => o.seg === "Outbound").length;
 $("c-in").textContent = ORDERS.filter(o => o.seg === "Inbound").length;
-$("c-ret").textContent = ORDERS.filter(o => o.status === "returned").length;
+$("c-paid").textContent = ORDERS.filter(o => o.status === "paid").length;
 $("c-rev").textContent = ORDERS.filter(o => o.status === "review").length;
+$("c-ret").textContent = ORDERS.filter(o => o.status === "returned").length;
+$("c-hist").textContent = ORDERS.filter(o => o.cycles.length).length;
 /* last update = the date data.js was built (Jakarta time, written by build_data.py) */
-const lastUpdate = (() => {
-  const m = /^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}))?/.exec(SRC.built || "");
-  return m ? fmtD(m[1]) : "—";
-})();
-$("source").innerHTML = `Last updated<br><b style="color:var(--side-ink);font-weight:600">${lastUpdate}</b>`;
+const lastUpdate = (() => { const m = /^(\d{4}-\d{2}-\d{2})/.exec(SRC.built || ""); return m ? fmtD(m[1]) : "—"; })();
+$("source").innerHTML = `Last updated<b>${lastUpdate}</b>`;
 
-fillSelects(); applyTheme(); render();
+fillSelects(); applyTheme();
+go(location.hash.slice(1), {}, false);
 </script>
 <!--BODY-END-->
 </body>

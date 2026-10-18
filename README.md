@@ -5,11 +5,13 @@ Static web dashboard (no build step for the page itself) for invoices paid in 20
 Open `index.html` in a browser, or deploy the folder as-is (e.g. Vercel, preset "Other").
 
 ## Pages
-- **Dashboard**: one-screen overview. Pick `2026` for the full year or a month to zoom in.
-  Total paid and invoices received (Outbound vs Inbound), paid / received per month, invoices not paid yet (returned / in review),
-  average days from submit to paid, payment speed buckets, return history, top partners, and the invoices waiting longest.
-- **Invoice data**: the full list with filters (type, partner, status, paid month, search), sorting and paging.
-  Sub-menus open it pre-filtered: Outbound, Inbound, Returned, In review. Click a row for the invoice timeline.
+- **Dashboard**: one screen on a 1920×1080 display. Pick `2026` or a month at the top right.
+  Top row: total paid, invoices received, average days to get paid, not paid yet.
+  Middle: paid / received per month, payment speed, top partners. Bottom: invoices waiting longest and return history.
+  Each tile has a tag showing whether it follows the selected period or shows today's situation, and an ⓘ with a plain explanation.
+- **Invoices**: All invoices, by type (Outbound, Inbound), by status (Paid, In review, Returned) and Return history.
+  Filters, removable filter chips, sorting, rows per page, sticky header. Click a row for the invoice timeline.
+- **Guide & definitions**: how to use the site and what each term means.
 
 ## Updating the data
 - `data/Order_Outbound_Inbound_2026.xlsx`: base list of all orders (sheet `Orders`).
