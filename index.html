@@ -251,6 +251,7 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .wlist .age b { display: block; font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .wlist .age span { font-size: 11px; color: var(--ink-3); }
 .foot-note { font-size: 11.5px; color: var(--ink-3); }
+.srcbtn { font-size: 11.5px; text-align: left; white-space: normal; }
 .rlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
 .rlist button { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: start; border: 0; background: transparent; text-align: left; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
 .rlist button:hover { background: var(--surface-2); }
@@ -850,11 +851,12 @@ function tileDays(paid) {
     const leads = g.map(o => o.lead).sort((a, b) => a - b);
     return { ...s, n: g.length, a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null, min: leads[0], max: leads[leads.length - 1] };
   });
-  $("t-days").innerHTML = head("Average days to get paid", "From submit date to paid date, in calendar days, for invoices paid in the selected period. Lower is better.", scopeP()) + `
+  $("t-days").innerHTML = head("Average days to get paid", "For each invoice paid in the selected period: paid date minus submit date, in calendar days. The number shown is the average. Lower is better.", scopeP()) + `
+    <div class="cap" style="margin-top:-6px">Paid date − submit date, averaged per type</div>
     <div class="duo">${cells.map(c => `
       <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
-        <div class="n">${c.n ? `<span>Based on <b>${plural(c.n, "invoice")}</b> paid</span>` : "None paid"}</div>
+        <div class="n">${c.n ? `<button class="link srcbtn" data-avg="${c.k}" data-tip="${esc(`Total ${sum(paid.filter(o => o.seg === c.k), o => o.lead)} days ÷ ${plural(c.n, "invoice")} = ${c.a} days on average.<br><i>Click to see these invoices and their days.</i>`)}">From ${plural(c.n, c.k + " invoice")} paid in ${periodShort()} →</button>` : `None paid in ${periodShort()}`}</div>
         ${c.n > 1 ? `<div class="n"><span>Fastest <b>${c.min}d</b> · slowest <b>${c.max}d</b></span></div>` : ""}
         ${c.a !== null && c.pa !== null ? `<div class="n">${delta(c.a, c.pa, "down", "d")}</div>` : ""}
       </div>`).join("")}</div>`;
@@ -1305,6 +1307,8 @@ document.addEventListener("click", e => {
     if (act.dataset.act === "unpaid") go("unpaid", { smonth: periodSel() });
     return;
   }
+  const av = t.closest("[data-avg]");
+  if (av) { go("paid", { kind: av.dataset.avg === "Inbound" ? "inbound" : "outbound", month: periodSel() }); state.sort = { key: "days", dir: -1 }; renderTable(); return; }
   const op = t.closest("[data-open]");
   if (op) { const [seg, st] = op.dataset.open.split("|"); go(st, { kind: seg === "Inbound" ? "inbound" : "outbound", smonth: periodSel() }); return; }
   const g = t.closest("[data-go]");
