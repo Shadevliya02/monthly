@@ -187,6 +187,22 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .stbtns .cnt { font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .stbtns .val { font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
+.otab { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+.otab th, .otab td { padding: 2px 4px; text-align: center; }
+.otab thead th { font-weight: 600; }
+.otab thead th .chip { font-size: 10.5px; padding: 1px 7px 1px 5px; }
+.otab tbody th { text-align: left; font-weight: 600; white-space: nowrap; }
+.otab tbody th i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+.otab tbody tr + tr th, .otab tbody tr + tr td { border-top: 1px solid var(--line); }
+.otab .tot { font: 800 16px var(--f-display); font-variant-numeric: tabular-nums; }
+.otab thead th { position: static; background: none; border: 0; padding: 4px; color: var(--ink-2); }
+.otab tbody tr { cursor: default; }
+.otab tbody tr td, .otab tbody tr th { padding: 3px 4px; border-bottom: 0; background: none !important; vertical-align: middle; }
+.cellbtn { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 2px 0; font: 800 15px var(--f-display); font-variant-numeric: tabular-nums; cursor: pointer; }
+.cellbtn.returned { color: var(--bad); }
+.cellbtn.review { color: var(--warn); }
+.cellbtn:hover:not([disabled]) { background: var(--surface-2); }
+.cellbtn[disabled] { color: var(--ink-3); cursor: default; opacity: .6; }
 .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; width: max-content; }
 .chip svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .chip.paid { background: var(--good-soft); color: var(--good); }
@@ -610,7 +626,7 @@ td.partner { font-weight: 600; }
             <h2>How to use this website</h2>
             <ol>
               <li><b>Dashboard</b> gives the summary. Pick a <b>period</b> at the top right: <b>2026</b> for the whole year, or a single month.</li>
-              <li>Tiles with a red <b>calendar tag</b> (for example “Sep 2026”) follow that period. Tiles tagged <b>Today</b> always show the current situation.</li>
+              <li>Tiles with a red <b>calendar tag</b> (for example “Sep 2026”) follow that period. <b>Not paid yet</b> and <b>Waiting longest</b> count invoices <b>submitted</b> in that period, with their status as of today. The monthly chart always shows the whole year.</li>
               <li>Hover or tap the <b>ⓘ</b> next to a tile title to read what it measures.</li>
               <li>Click a <b>month bar</b>, a <b>partner</b>, a status or a <b>View</b> link to open the matching invoice list.</li>
               <li><b>Invoices</b> lists every invoice. Use the filters to narrow it down, then click a row to see its full timeline.</li>
@@ -645,7 +661,7 @@ td.partner { font-weight: 600; }
             <dt>Paid</dt><dd>Payment is done.</dd>
             <dt>In review</dt><dd>Submitted and not paid yet. Documents are being checked or processed.</dd>
             <dt>Returned</dt><dd>Sent back to the partner to fix. Needs follow-up.</dd>
-            <dt>Not paid yet</dt><dd>In review plus Returned.</dd>
+            <dt>Not paid yet</dt><dd>In review plus Returned. On the Dashboard, counted by the month the invoice was submitted.</dd>
             <dt>Days waiting</dt><dd>For invoices not paid yet: today minus submit date.</dd>
             <dt>Return / Resubmit</dt><dd>Each time an invoice is sent back to the partner (return) and sent again (resubmit). Numbered 1, 2, 3 when it happens more than once.</dd>
             <dt>Return aging</dt><dd>Where the time went for a returned invoice: <b>Review</b> (TDE checking, before each return), <b>Partner</b> (fixing, from return to resubmit) and <b>Payment</b> (from the last resubmit to paid).</dd>
@@ -838,23 +854,30 @@ function tileDays(paid) {
     <div class="duo">${cells.map(c => `
       <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
-        <div class="n">${c.n ? `<span>${plural(c.n, "invoice")} · range <b>${c.min}–${c.max}d</b></span>` : "None paid"}${c.a !== null && c.pa !== null ? delta(c.a, c.pa, "down", "d") : ""}</div>
+        <div class="n">${c.n ? `<span>Based on <b>${plural(c.n, "invoice")}</b> paid</span>` : "None paid"}</div>
+        ${c.n > 1 ? `<div class="n"><span>Fastest <b>${c.min}d</b> · slowest <b>${c.max}d</b></span></div>` : ""}
+        ${c.a !== null && c.pa !== null ? `<div class="n">${delta(c.a, c.pa, "down", "d")}</div>` : ""}
       </div>`).join("")}</div>`;
 }
 
+/* not paid yet in the selected period = submitted in that period and still not paid (status as of today) */
+const openInPeriod = () => ORDERS.filter(o => o.status !== "paid" && inYM(o.submit, periodSel()));
 function tileOpen() {
-  const open = ORDERS.filter(o => o.status !== "paid");
-  const ret = open.filter(o => o.status === "returned"), rev = open.filter(o => o.status === "review");
+  const open = openInPeriod();
+  const ret = open.filter(o => o.status === "returned");
+  const cell = (seg, st) => {
+    const g = open.filter(o => o.seg === seg && o.status === st);
+    return `<td><button class="cellbtn ${st}" data-open="${seg}|${st}" ${g.length ? "" : "disabled"} data-tip="${esc(`${seg} · ${STATUS[st]}: ${g.length} invoices · ${rp(sum(g, o => o.value))}`)}">${g.length}</button></td>`;
+  };
   const t = $("t-open");
   t.classList.toggle("alert", ret.length > 0);
-  t.innerHTML = head("Not paid yet", "Invoices that are still in review or were returned to the partner, regardless of the period.", scopeNow(),
+  t.innerHTML = head("Not paid yet", `Invoices submitted in ${periodName()} that are still in review or returned (status as of today).`, scopeP(),
       ret.length ? `<span class="alert-dot" data-tip="${ret.length} returned invoices need follow-up">!</span>` : "") + `
     <div><div class="big">${open.length}<small>invoices</small></div>
       <div class="line"><span><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</span></div></div>
-    <div class="stbtns">
-      <button data-go="returned" data-tip="Open the ${ret.length} returned invoices">${chip("returned")}<div class="row"><span class="cnt">${ret.length}</span><span class="val">${rpS(sum(ret, o => o.value))}</span></div></button>
-      <button data-go="review" data-tip="Open the ${rev.length} invoices in review">${chip("review")}<div class="row"><span class="cnt">${rev.length}</span><span class="val">${rpS(sum(rev, o => o.value))}</span></div></button>
-    </div>`;
+    ${open.length ? `<table class="otab"><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
+      ${SEGS.map(sg => `<tr><th><i style="background:${sg.col}"></i>${sg.label}</th>${cell(sg.k, "returned")}${cell(sg.k, "review")}<td class="tot">${open.filter(o => o.seg === sg.k).length}</td></tr>`).join("")}
+    </tbody></table>` : `<p class="empty-note">Nothing waiting from ${periodName()}.</p>`}`;
 }
 
 function niceMax(v) {
@@ -953,10 +976,10 @@ const WAIT = [
   { l: "> 90 d", t: d => d > 90, c: "var(--age-4)" },
 ];
 function tileWaiting() {
-  const open = ORDERS.filter(o => o.status !== "paid");
+  const open = openInPeriod();
   const w = WAIT.map(b => ({ ...b, n: open.filter(o => b.t(o.waiting)).length }));
   const list = open.slice().sort((a, b) => b.waiting - a.waiting).slice(0, 3);
-  $("t-waiting").innerHTML = head("Waiting longest for payment", "Invoices not paid yet, by days since submit. The bar groups all of them; the list shows the oldest.", scopeNow()) + `
+  $("t-waiting").innerHTML = head("Waiting longest for payment", `Invoices submitted in ${periodName()} and not paid yet, by days since submit (counted to today). The bar groups all of them; the list shows the oldest.`, scopeP()) + `
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="cap">Days waiting since submit · ${open.length} invoices</div>
       ${sbar(w.map(x => ({ v: x.n, c: x.c, tip: `${x.l}: ${x.n} invoices` })))}
@@ -969,16 +992,23 @@ function tileWaiting() {
         <span class="amt">${rp(o.value)}</span>
         <span class="age"><b>${o.waiting}</b><span>days waiting</span></span>
       </button>`).join("")}</div>
-    <div class="tile-foot"><span class="hint">Click an invoice to see its timeline</span><button class="link" data-go="unpaid">View all ${open.length} →</button></div>`;
+    ${open.length ? "" : `<p class="empty-note">Nothing waiting from ${periodName()}.</p>`}
+    <div class="tile-foot"><span class="hint">Click an invoice to see its timeline</span>${open.length ? `<button class="link" data-act="unpaid">View all ${open.length} →</button>` : ""}</div>`;
 }
 
 function tileReturns() {
-  const withR = ORDERS.filter(o => o.cycles.length);
-  const cycles = withR.flatMap(o => o.cycles);
+  const sel = periodSel();
+  const withR = ORDERS.filter(o => o.cycles.some(c => inYM(c[0], sel)));
+  const cycles = withR.flatMap(o => o.cycles.filter(c => inYM(c[0], sel)));
+  if (!withR.length) {
+    $("t-returns").innerHTML = head("Return history", "Returns whose return date falls in the selected period.", scopeP()) +
+      `<p class="empty-note">No returns recorded in ${periodName()}.</p><div class="tile-foot"><span class="hint">Return dates are recorded for ${ORDERS.filter(o => o.cycles.length).length} invoices</span><button class="link" data-go="history">View →</button></div>`;
+    return;
+  }
   const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
   const paidR = withR.filter(o => o.paid);
   const ag = { rev: avg(withR, o => o.aging.rev), fix: avg(withR, o => o.aging.fix), pay: avg(paidR, o => o.aging.pay) };
-  $("t-returns").innerHTML = head("Return history", "Invoices with recorded return and resubmit dates. Shows where the time went: TDE review, partner fixing, and payment.", scopeTxt(`${ICON.rec}${withR.length} recorded`, "Only invoices with return dates on record")) + `
+  $("t-returns").innerHTML = head("Return history", "Returns whose return date falls in the selected period, from invoices with recorded return dates. Shows where the time went: TDE review, partner fixing, and payment.", scopeP()) + `
     <div><div class="big">${cycles.length}<small>returns</small></div>
       <div class="line"><span>on <b>${withR.length}</b> outbound invoices · partner needs <b>${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> per fix</span></div></div>
     <div style="display:flex;flex-direction:column;gap:6px">
@@ -988,10 +1018,10 @@ function tileReturns() {
     </div>
     <div style="display:flex;flex-direction:column;gap:4px;min-height:0">
       <div class="cap">Returned most often</div>
-      <div class="rlist">${withR.slice().sort((a, b) => b.cycles.length - a.cycles.length || b.aging.fix - a.aging.fix).slice(0, 2).map(o => `
-        <button data-id="${o.no}" data-tip="Click to see the timeline"><b>${o.cycles.length}×</b><span><em>${esc(o.partner)}</em>${esc(o.desc)}</span></button>`).join("")}</div>
+      <div class="rlist">${withR.map(o => ({ o, n: o.cycles.filter(c => inYM(c[0], sel)).length })).sort((a, b) => b.n - a.n || b.o.aging.fix - a.o.aging.fix).slice(0, 2).map(({ o, n }) => `
+        <button data-id="${o.no}" data-tip="Returned ${n}× in ${periodName()} · click to see the timeline"><b>${n}×</b><span><em>${esc(o.partner)}</em>${esc(o.desc)}</span></button>`).join("")}</div>
     </div>
-    <div class="tile-foot"><span class="hint">Dates are recorded for these ${withR.length} only</span><button class="link" data-go="history">View →</button></div>`;
+    <div class="tile-foot"><span class="hint">Return dates are recorded for ${ORDERS.filter(o => o.cycles.length).length} invoices only</span><button class="link" data-go="history">View →</button></div>`;
 }
 
 function renderDash() {
@@ -1040,7 +1070,7 @@ function tableRows() {
   return rows;
 }
 const sq = k => `<i style="background:${STAGE[k].c}"></i>`;
-function rowHtml(o) {
+function rowHtml(o, idx) {
   const dash = `<span class="muted">—</span>`;
   let ret = dash, res = dash, aging = dash, after = "";
   if (o.cycles.length) {
@@ -1062,7 +1092,7 @@ function rowHtml(o) {
     if (o.paid) after = `<span class="after">+${ag.pay}d after ${o.cycles[o.cycles.length - 1][1] ? "resubmit" : "return"}</span>`;
   }
   return `<tr data-id="${o.no}" tabindex="0">
-    <td class="muted num">${o.no}</td>
+    <td class="muted num">${idx}</td>
     <td class="nw">${o.seg}</td>
     <td class="nw">${o.project === "-" ? "Project Delta" : esc(o.project)}</td>
     <td class="partner">${esc(o.partner)}</td>
@@ -1108,12 +1138,12 @@ function renderTable() {
   }
   const COLS = [60, 104, 124, 190, 300, 190, 150, 118, 122, 168, 168, 172, 210, 108];
   $("tb").innerHTML = `<table><colgroup>${COLS.map(w => `<col style="width:${w}px">`).join("")}</colgroup><thead><tr>
-      ${th("no", "No")}<th>Type of Work</th><th>Type Project</th><th>Partner</th><th>Description</th><th>Invoice Number</th>
+      <th>No</th><th>Type of Work</th><th>Type Project</th><th>Partner</th><th>Description</th><th>Invoice Number</th>
       ${th("value", "BAST Value", "r")}<th>Status</th>${th("submit", "Submit Date")}
       <th>Return Date<small>+d since (re)submit</small></th><th>Resubmit Date<small>+d since return</small></th>${th("paid", "Paid Date")}
       <th>Return Aging ${info("Only for invoices with return dates. Review = TDE checking before each return, Partner = fixing from return to resubmit, Payment = last resubmit to paid.")}<small><span>${sq("rev")}Review</span><span>${sq("fix")}Partner</span><span>${sq("pay")}Payment</span></small></th>
       ${th("days", "Days", "r")}
-    </tr></thead><tbody>${slice.map(rowHtml).join("")}</tbody></table>`;
+    </tr></thead><tbody>${slice.map((o, i) => rowHtml(o, state.page * state.per + i + 1)).join("")}</tbody></table>`;
   const btn = (pg, l, on) => `<button data-page="${pg}"${on ? ' class="on"' : ""}${pg < 0 || pg >= pages ? " disabled" : ""}>${l}</button>`;
   const nums = []; for (let pg = Math.max(0, state.page - 2); pg <= Math.min(pages - 1, state.page + 2); pg++) nums.push(btn(pg, pg + 1, pg === state.page));
   $("pager").innerHTML = `<div class="left"><span>Showing ${state.page * state.per + 1}–${state.page * state.per + slice.length} of ${rows.length}</span>
@@ -1272,8 +1302,11 @@ document.addEventListener("click", e => {
   if (act) {
     if (act.dataset.act === "paid") go("paid", { month: periodSel() });
     if (act.dataset.act === "received") go("received", { smonth: periodSel() });
+    if (act.dataset.act === "unpaid") go("unpaid", { smonth: periodSel() });
     return;
   }
+  const op = t.closest("[data-open]");
+  if (op) { const [seg, st] = op.dataset.open.split("|"); go(st, { kind: seg === "Inbound" ? "inbound" : "outbound", smonth: periodSel() }); return; }
   const g = t.closest("[data-go]");
   if (g) { go(g.dataset.go); return; }
   const pa = t.closest("[data-partner]");
