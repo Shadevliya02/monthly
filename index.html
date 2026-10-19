@@ -188,6 +188,8 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .stbtns .val { font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 .otab { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+.otab col.lbl { width: 34%; }
+.otab col.tot { width: 15%; }
 .otab th, .otab td { padding: 2px 4px; text-align: center; }
 .otab thead th { font-weight: 600; }
 .otab thead th .chip { font-size: 10.5px; padding: 1px 7px 1px 5px; }
@@ -203,6 +205,14 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .cellbtn.review { color: var(--warn); }
 .cellbtn:hover:not([disabled]) { background: var(--surface-2); }
 .cellbtn[disabled] { color: var(--ink-3); cursor: default; opacity: .6; }
+/* the KPI tiles get narrow on laptop screens: compact the header chips and drop the formula note */
+#t-days, #t-open { container-type: inline-size; }
+@container (max-width: 320px) {
+  .otab thead th .chip { padding: 1px 6px; font-size: 10.5px; }
+  .otab thead th .chip svg { display: none; }
+  .otab tbody th i { margin-right: 5px; }
+}
+@container (max-width: 380px) { .hint .f { display: none; } }
 .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; width: max-content; }
 .chip svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .chip.paid { background: var(--good-soft); color: var(--good); }
@@ -251,7 +261,10 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .wlist .age b { display: block; font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .wlist .age span { font-size: 11px; color: var(--ink-3); }
 .foot-note { font-size: 11.5px; color: var(--ink-3); }
-.srcbtn { font-size: 11.5px; text-align: left; white-space: normal; }
+.srcchip { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 99px; padding: 1px 6px 1px 9px; font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.srcchip b { color: var(--ink); font-weight: 700; }
+.srcchip svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.srcchip:hover { background: var(--surface-2); color: var(--ink); }
 .rlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
 .rlist button { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: start; border: 0; background: transparent; text-align: left; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
 .rlist button:hover { background: var(--surface-2); }
@@ -429,6 +442,9 @@ td.partner { font-weight: 600; }
   .dash { grid-template-areas: "k1 k2 k3 k4" "trend trend trend trend" "speed speed returns returns" "waiting waiting partners partners"; }
   .tile.t-partners { min-height: 0; }
   .guide { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1480px) {
+  .dash { grid-template-areas: "k1 k1 k2 k2" "k3 k3 k4 k4" "trend trend trend trend" "speed speed returns returns" "waiting waiting partners partners"; }
 }
 @media (max-width: 1600px) {
   .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -849,17 +865,17 @@ function tileDays(paid) {
   const cells = SEGS.map(s => {
     const g = paid.filter(o => o.seg === s.k), pg = prev ? prev.filter(o => o.seg === s.k) : [];
     const leads = g.map(o => o.lead).sort((a, b) => a - b);
-    return { ...s, n: g.length, a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null, min: leads[0], max: leads[leads.length - 1] };
+    return { ...s, n: g.length, tot: sum(g, o => o.lead), a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null, min: leads[0], max: leads[leads.length - 1] };
   });
-  $("t-days").innerHTML = head("Average days to get paid", "For each invoice paid in the selected period: paid date minus submit date, in calendar days. The number shown is the average. Lower is better.", scopeP()) + `
-    <div class="cap" style="margin-top:-6px">Paid date − submit date, averaged per type</div>
+  const src = c => `<button class="srcchip" data-avg="${c.k}" data-tip="${esc(`${c.tot} days ÷ ${plural(c.n, "invoice")} = <b>${c.a} days</b> on average` + (c.n > 1 ? `<br>Fastest ${c.min} days · slowest ${c.max} days` : "") + `<br><i>Click to see these invoices.</i>`)}"><b>${c.n}</b> ${c.n === 1 ? "invoice" : "invoices"}<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>`;
+  $("t-days").innerHTML = head("Average days to get paid", "For each invoice paid in the selected period: paid date minus submit date, in calendar days. The number shown is the average per type. Lower is better.", scopeP()) + `
     <div class="duo">${cells.map(c => `
       <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
-        <div class="n">${c.n ? `<button class="link srcbtn" data-avg="${c.k}" data-tip="${esc(`Total ${sum(paid.filter(o => o.seg === c.k), o => o.lead)} days ÷ ${plural(c.n, "invoice")} = ${c.a} days on average.<br><i>Click to see these invoices and their days.</i>`)}">From ${plural(c.n, c.k + " invoice")} paid in ${periodShort()} →</button>` : `None paid in ${periodShort()}`}</div>
-        ${c.n > 1 ? `<div class="n"><span>Fastest <b>${c.min}d</b> · slowest <b>${c.max}d</b></span></div>` : ""}
+        <div class="n">${c.n ? src(c) : "None paid"}</div>
         ${c.a !== null && c.pa !== null ? `<div class="n">${delta(c.a, c.pa, "down", "d")}</div>` : ""}
-      </div>`).join("")}</div>`;
+      </div>`).join("")}</div>
+    <div class="tile-foot"><span class="hint">Based on invoices paid in ${periodShort()}<span class="f"> · paid date − submit date</span></span></div>`;
 }
 
 /* not paid yet in the selected period = submitted in that period and still not paid (status as of today) */
@@ -877,7 +893,7 @@ function tileOpen() {
       ret.length ? `<span class="alert-dot" data-tip="${ret.length} returned invoices need follow-up">!</span>` : "") + `
     <div><div class="big">${open.length}<small>invoices</small></div>
       <div class="line"><span><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</span></div></div>
-    ${open.length ? `<table class="otab"><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
+    ${open.length ? `<table class="otab"><colgroup><col class="lbl"><col><col><col class="tot"></colgroup><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
       ${SEGS.map(sg => `<tr><th><i style="background:${sg.col}"></i>${sg.label}</th>${cell(sg.k, "returned")}${cell(sg.k, "review")}<td class="tot">${open.filter(o => o.seg === sg.k).length}</td></tr>`).join("")}
     </tbody></table>` : `<p class="empty-note">Nothing waiting from ${periodName()}.</p>`}`;
 }
