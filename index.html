@@ -906,7 +906,7 @@ function tileDays(paid) {
   const cells = SEGS.map(s => {
     const g = paid.filter(o => o.seg === s.k), pg = prev ? prev.filter(o => o.seg === s.k) : [];
     const leads = g.map(o => o.lead).sort((a, b) => a - b);
-    return { ...s, n: g.length, tot: sum(g, o => o.lead), a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null, min: leads[0], max: leads[leads.length - 1] };
+    return { ...s, n: g.length, fast: leads.filter(d => d <= 30).length, slow: leads.filter(d => d > 60).length, tot: sum(g, o => o.lead), a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null, min: leads[0], max: leads[leads.length - 1] };
   });
   const src = c => `<button class="srcchip" data-avg="${c.k}" data-tip="${esc(`${c.tot} days ÷ ${plural(c.n, "invoice")} = <b>${c.a} days</b> on average` + (c.pa !== null ? `<br>${MONTHS[prevMonth()]}: ${Math.round(c.pa)} days on average` : "") + `<br><i>Click to see these invoices.</i>`)}"><b>${c.n}</b> ${c.n === 1 ? "invoice" : "invoices"}<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>`;
   $("t-days").innerHTML = head("Average days to get paid", "For each invoice paid in the selected period: paid date minus submit date, in calendar days. The number shown is the average per type. Lower is better.", scopeP()) + `
@@ -914,9 +914,9 @@ function tileDays(paid) {
       <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
         <div class="n">${c.n ? src(c) : "None paid"}</div>
-        ${c.n > 1 ? `<div class="n mm">
-          <button class="delta good" data-avg="${c.k}" data-dir="asc" data-tip="${esc(`Fastest ${c.k} invoice: paid ${c.min} days after submit<br><i>Click to see the invoices, fastest first</i>`)}">Fastest <b>${c.min}d</b></button>
-          <button class="delta bad" data-avg="${c.k}" data-tip="${esc(`Slowest ${c.k} invoice: paid ${c.max} days after submit<br><i>Click to see the invoices, slowest first</i>`)}">Slowest <b>${c.max}d</b></button>
+        ${c.n ? `<div class="n mm">
+          <button class="delta good" data-avg="${c.k}" data-dir="asc" data-tip="${esc(`${c.fast} of ${plural(c.n, c.k + " invoice")} paid within 1 month (≤ 30 days after submit)<br>Fastest: ${c.min} days<br><i>Click to see the invoices, fastest first</i>`)}">Under 1 month <b>${c.fast}</b></button>
+          <button class="delta bad" data-avg="${c.k}" data-tip="${esc(`${c.slow} of ${plural(c.n, c.k + " invoice")} took more than 2 months (> 60 days after submit)<br>Slowest: ${c.max} days<br><i>Click to see the invoices, slowest first</i>`)}">Over 2 months <b>${c.slow}</b></button>
         </div>` : ""}
       </div>`).join("")}</div>
     <div class="tile-foot"><span class="hint">Based on invoices paid in ${periodShort()}<span class="f"> · paid date − submit date</span></span></div>`;
