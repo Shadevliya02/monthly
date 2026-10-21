@@ -833,6 +833,14 @@ function delta(cur, prev, good, unit = "%") {
   return `<span class="delta ${tone}" data-tip="Compared with ${MONTHS[pm]} ${YEAR}">${arrow} ${txt}<em>vs ${MS[pm]}</em></span>`;
 }
 
+/* days to get paid vs last month: say "faster" / "slower" instead of ▲▼ (fewer days is the good direction) */
+function speedDelta(cur, prev) {
+  const pm = prevMonth(), ch = Math.round(cur - prev);
+  const tip = `Average ${Math.round(prev)} days in ${MONTHS[pm]} ${YEAR} → ${cur} days now`;
+  if (!ch) return `<span class="delta neutral" data-tip="${tip}">Same as ${MS[pm]}</span>`;
+  return `<span class="delta ${ch < 0 ? "good" : "bad"}" data-tip="${tip}">${Math.abs(ch)}d ${ch < 0 ? "faster" : "slower"}<em>vs ${MS[pm]}</em></span>`;
+}
+
 /* ---------- theme ---------- */
 function applyTheme() {
   document.documentElement.classList.toggle("dark", state.dark);
@@ -893,7 +901,7 @@ function tileDays(paid) {
       <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
         <div class="n">${c.n ? src(c) : "None paid"}</div>
-        ${c.a !== null && c.pa !== null ? `<div class="n">${delta(c.a, c.pa, "down", "d")}</div>` : ""}
+        ${c.a !== null && c.pa !== null ? `<div class="n">${speedDelta(c.a, c.pa)}</div>` : ""}
       </div>`).join("")}</div>
     <div class="tile-foot"><span class="hint">Based on invoices paid in ${periodShort()}<span class="f"> · paid date − submit date</span></span></div>`;
 }
