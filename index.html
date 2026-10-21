@@ -656,7 +656,7 @@ td.partner { font-weight: 600; }
             <h2>How to use this website</h2>
             <ol>
               <li><b>Dashboard</b> gives the summary. Pick a <b>period</b> at the top right: <b>2026</b> for the whole year, or a single month.</li>
-              <li>Tiles with a red <b>calendar tag</b> (for example “Sep 2026”) follow that period. <b>Not paid yet</b> and <b>Waiting longest</b> count invoices <b>submitted</b> in that period, with their status as of today. The monthly chart always shows the whole year.</li>
+              <li>Tiles with a red <b>calendar tag</b> (for example “Sep 2026”) follow that period. <b>Not paid yet</b> and <b>Waiting longest</b> count invoices <b>submitted from January up to</b> that month (tag “Jan–Sep 2026”), with their status as of today. The monthly chart always shows the whole year.</li>
               <li>Hover or tap the <b>ⓘ</b> next to a tile title to read what it measures.</li>
               <li>Click a <b>month bar</b>, a <b>partner</b>, a status or a <b>View</b> link to open the matching invoice list.</li>
               <li><b>Invoices</b> lists every invoice. Use the filters to narrow it down, then click a row to see its full timeline.</li>
@@ -752,6 +752,9 @@ const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const $ = id => document.getElementById(id);
 const chip = st => `<span class="chip ${st}">${ICON_ST[st] || ""}${STATUS[st] || esc(st)}</span>`;
 const inYM = (date, sel) => { if (!date) return false; const d = D(date); return d.getFullYear() === YEAR && (sel === "year" || d.getMonth() === +sel); };
+/* "u8" = submitted from January up to the end of September (older unpaid invoices carried over count too) */
+const upTo = (date, m) => { if (!date) return false; const d = D(date); return d.getFullYear() < YEAR || (d.getFullYear() === YEAR && d.getMonth() <= m); };
+const inSub = (date, sel) => typeof sel === "string" && sel[0] === "u" ? upTo(date, +sel.slice(1)) : inYM(date, sel);
 
 /* ---------- data ---------- */
 const ORDERS = SRC.orders.map(o => ({
@@ -801,6 +804,11 @@ const receivedIn = m => ORDERS.filter(o => inYM(o.submit, m));
 /* ---------- small UI builders ---------- */
 const info = t => `<button class="info" type="button" aria-label="What is this?" data-tip="${esc(t)}">${ICON.info}</button>`;
 const scopeP = () => `<span class="scope" data-tip="Follows the period selected at the top">${ICON.cal}${periodShort()}</span>`;
+/* year to date: January up to the selected month */
+const cumSel = () => "u" + (state.period === "year" ? 11 : state.period);
+const cumShort = () => state.period === "year" || state.period === 0 ? periodShort() : `Jan–${MS[state.period]} ${YEAR}`;
+const cumName = () => state.period === "year" ? String(YEAR) : state.period === 0 ? `January ${YEAR}` : `January to ${MONTHS[state.period]} ${YEAR}`;
+const scopeC = () => `<span class="scope" data-tip="From January up to the month selected at the top">${ICON.cal}${cumShort()}</span>`;
 const scopeNow = () => `<span class="scope now" data-tip="Current situation, not affected by the period">${ICON.clock}Today</span>`;
 const scopeTxt = (t, tip) => `<span class="scope now" data-tip="${esc(tip)}">${t}</span>`;
 const head = (title, tip, scope, extra = "") => `<div class="tile-h"><h2>${title}</h2>${info(tip)}${extra}${scope}</div>`;
@@ -890,8 +898,8 @@ function tileDays(paid) {
     <div class="tile-foot"><span class="hint">Based on invoices paid in ${periodShort()}<span class="f"> · paid date − submit date</span></span></div>`;
 }
 
-/* not paid yet in the selected period = submitted in that period and still not paid (status as of today) */
-const openInPeriod = () => ORDERS.filter(o => o.status !== "paid" && inYM(o.submit, periodSel()));
+/* not paid yet = submitted from January up to the selected month and still not paid (status as of today) */
+const openInPeriod = () => ORDERS.filter(o => o.status !== "paid" && inSub(o.submit, cumSel()));
 function tileOpen() {
   const open = openInPeriod();
   const ret = open.filter(o => o.status === "returned");
@@ -901,13 +909,13 @@ function tileOpen() {
   };
   const t = $("t-open");
   t.classList.toggle("alert", ret.length > 0);
-  t.innerHTML = head("Not paid yet", `Invoices submitted in ${periodName()} that are still in review or returned (status as of today).`, scopeP(),
+  t.innerHTML = head("Not paid yet", `Invoices submitted from January up to the selected month (${cumName()}) that are still in review or returned, status as of today.`, scopeC(),
       ret.length ? `<span class="alert-dot" data-tip="${ret.length} returned invoices need follow-up">!</span>` : "") + `
     <div><div class="big">${open.length}<small>invoices</small></div>
       <div class="line"><span><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</span></div></div>
     ${open.length ? `<table class="otab"><colgroup><col class="lbl"><col><col><col class="tot"></colgroup><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
       ${SEGS.map(sg => `<tr><th><i style="background:${sg.col}"></i>${sg.label}</th>${cell(sg.k, "returned")}${cell(sg.k, "review")}<td class="tot">${open.filter(o => o.seg === sg.k).length}</td></tr>`).join("")}
-    </tbody></table>` : `<p class="empty-note">Nothing waiting from ${periodName()}.</p>`}`;
+    </tbody></table>` : `<p class="empty-note">Nothing waiting from ${cumName()}.</p>`}`;
 }
 
 function niceMax(v) {
@@ -1009,9 +1017,9 @@ function tileWaiting() {
   const open = openInPeriod();
   const w = WAIT.map(b => ({ ...b, n: open.filter(o => b.t(o.waiting)).length }));
   const list = open.slice().sort((a, b) => b.waiting - a.waiting).slice(0, 3);
-  $("t-waiting").innerHTML = head("Waiting longest for payment", `Invoices submitted in ${periodName()} and not paid yet, by days since submit (counted to today). The bar groups all of them; the list shows the oldest.`, scopeP()) + `
+  $("t-waiting").innerHTML = head("Waiting longest for payment", `The same invoices as Not paid yet (submitted ${cumName()}, not paid yet), by days since submit counted to today. The bar groups all of them; the list shows the 3 waiting longest.`, scopeC()) + `
     <div style="display:flex;flex-direction:column;gap:6px">
-      <div class="cap">Days waiting since submit · ${open.length} invoices</div>
+      <div class="cap">Days waiting since submit · ${plural(open.length, "invoice")}${open.length > 3 ? " · top 3 waiting longest below" : ""}</div>
       ${sbar(w.map(x => ({ v: x.n, c: x.c, tip: `${x.l}: ${x.n} invoices` })))}
       <div class="lg">${w.map(x => `<span><i style="background:${x.c}"></i>${x.l} <b>${x.n}</b></span>`).join("")}</div>
     </div>
@@ -1022,7 +1030,7 @@ function tileWaiting() {
         <span class="amt">${rp(o.value)}</span>
         <span class="age"><b>${o.waiting}</b><span>days waiting</span></span>
       </button>`).join("")}</div>
-    ${open.length ? "" : `<p class="empty-note">Nothing waiting from ${periodName()}.</p>`}
+    ${open.length ? "" : `<p class="empty-note">Nothing waiting from ${cumName()}.</p>`}
     <div class="tile-foot"><span class="hint">Click an invoice to see its timeline</span>${open.length ? `<button class="link" data-act="unpaid">View all ${open.length} →</button>` : ""}</div>`;
 }
 
@@ -1075,13 +1083,14 @@ const PRESETS = {
 };
 const KIND_L = { outbound: "Outbound (all)", "out-xc": "Outbound · Cross Connect", "out-colo": "Outbound · Colocation", inbound: "Inbound" };
 const STATUS_L = { paid: "Paid", unpaid: "Not paid yet", review: "In review", returned: "Returned" };
-const monthL = v => v === "year" ? "All of " + YEAR : MONTHS[+v] + " " + YEAR;
+const monthL = v => { v = String(v); if (v === "year") return "All of " + YEAR; if (v[0] === "u") return +v.slice(1) ? `Jan–${MS[+v.slice(1)]} ${YEAR}` : `Jan ${YEAR}`; return MONTHS[+v] + " " + YEAR; };
 
 function fillSelects() {
   const partners = [...new Set(ORDERS.map(o => o.partner))].sort((a, b) => a.localeCompare(b));
   $("f-partner").innerHTML = `<option value="all">All partners (${partners.length})</option>` + partners.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
   const opts = `<option value="all">Any time</option><option value="year">All of ${YEAR}</option>` + MONTHS.map((m, i) => `<option value="${i}">${m} ${YEAR}</option>`).join("");
-  $("f-smonth").innerHTML = opts; $("f-month").innerHTML = opts;
+  $("f-smonth").innerHTML = opts + `<optgroup label="From January up to">` + MS.map((_, i) => `<option value="u${i}">${monthL("u" + i)}</option>`).join("") + `</optgroup>`;
+  $("f-month").innerHTML = opts;
 }
 function tableRows() {
   const f = state.f, q = f.q.trim().toLowerCase();
@@ -1090,7 +1099,7 @@ function tableRows() {
       (f.kind === "out-xc" && o.project === "Cross Connect") || (f.kind === "out-colo" && o.project === "Colocation")) &&
     (f.partner === "all" || o.partner === f.partner) &&
     (f.status === "all" || (f.status === "unpaid" ? o.status !== "paid" : o.status === f.status)) &&
-    (f.smonth === "all" || inYM(o.submit, f.smonth)) &&
+    (f.smonth === "all" || inSub(o.submit, String(f.smonth))) &&
     (f.month === "all" || inYM(o.paid, f.month)) &&
     (!f.hist || o.cycles.length) &&
     (!q || (o.partner + " " + o.desc + " " + o.inv + " " + o.contract).toLowerCase().includes(q)));
@@ -1332,13 +1341,13 @@ document.addEventListener("click", e => {
   if (act) {
     if (act.dataset.act === "paid") go("paid", { month: periodSel() });
     if (act.dataset.act === "received") go("received", { smonth: periodSel() });
-    if (act.dataset.act === "unpaid") go("unpaid", { smonth: periodSel() });
+    if (act.dataset.act === "unpaid") go("unpaid", { smonth: cumSel() });
     return;
   }
   const av = t.closest("[data-avg]");
   if (av) { go("paid", { kind: av.dataset.avg === "Inbound" ? "inbound" : "outbound", month: periodSel() }); state.sort = { key: "days", dir: -1 }; renderTable(); return; }
   const op = t.closest("[data-open]");
-  if (op) { const [seg, st] = op.dataset.open.split("|"); go(st, { kind: seg === "Inbound" ? "inbound" : "outbound", smonth: periodSel() }); return; }
+  if (op) { const [seg, st] = op.dataset.open.split("|"); go(st, { kind: seg === "Inbound" ? "inbound" : "outbound", smonth: cumSel() }); return; }
   const g = t.closest("[data-go]");
   if (g) { go(g.dataset.go); return; }
   const pa = t.closest("[data-partner]");
