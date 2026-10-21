@@ -275,9 +275,12 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .wlist .age span { font-size: 11px; color: var(--ink-3); }
 .foot-note { font-size: 11.5px; color: var(--ink-3); }
 .wgrp { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.wgrp > div { border-left: 3px solid; padding: 1px 0 1px 9px; min-width: 0; }
+.wgrp > div { border-left: 3px solid; padding: 0 0 0 9px; min-width: 0; }
 .wgrp span { display: block; font-size: 11.5px; line-height: 1.35; font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wgrp em { display: block; font-style: normal; font-size: 11px; line-height: 1.2; color: var(--ink-3); white-space: nowrap; }
+.wgrp em { display: flex; flex-wrap: wrap; gap: 0 10px; font-style: normal; font-size: 11px; line-height: 1.25; }
+.wgrp em span { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: var(--ink-2); line-height: 1.25; }
+.wgrp em i { width: 7px; height: 7px; border-radius: 2px; }
+.wgrp em strong { color: var(--ink); font-weight: 700; }
 .wgrp b { display: block; font: 800 18px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
 .wgrp b small { font: 600 11.5px var(--f-body); color: var(--ink-2); margin-left: 4px; }
 .srcchip { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 99px; padding: 1px 6px 1px 9px; font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -1030,13 +1033,13 @@ const WAIT = [
 ];
 function tileWaiting() {
   const open = openInPeriod();
-  const w = WAIT.map(b => ({ ...b, n: open.filter(o => b.t(o.waiting)).length }));
+  const w = WAIT.map(b => { const g = open.filter(o => b.t(o.waiting)); return { ...b, n: g.length, by: SEGS.map(sg => ({ ...sg, n: g.filter(o => o.seg === sg.k).length })) }; });
   const list = open.slice().sort((a, b) => b.waiting - a.waiting).slice(0, 3);
   $("t-waiting").innerHTML = head("Waiting longest for payment", `The same invoices as Not paid yet (submitted ${cumName()}, not paid yet), by days since submit counted to today. The bar groups all of them; the list shows the 3 waiting longest.`, scopeC()) + `
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="cap">How long the ${plural(open.length, "invoice")} have been waiting since submit</div>
       ${sbar(w.map(x => ({ v: x.n, c: x.c, tip: `${x.l} (${x.d}): ${plural(x.n, "invoice")}` })))}
-      <div class="wgrp">${w.map(x => `<div style="border-color:${x.c}" data-tip="${esc(`Waiting ${x.d} since submit`)}"><span>${x.l}</span><b>${x.n}<small>${x.n === 1 ? "invoice" : "invoices"}</small></b><em>${x.d}</em></div>`).join("")}</div>
+      <div class="wgrp">${w.map(x => `<div style="border-color:${x.c}" data-tip="${esc(`${x.l}: waiting ${x.d} since submit<br>` + x.by.map(b => `${b.label}: ${plural(b.n, "invoice")}`).join("<br>"))}"><span>${x.l}</span><b>${x.n}<small>${x.n === 1 ? "invoice" : "invoices"}</small></b><em>${x.by.map(b => `<span><i style="background:${b.col}"></i>${b.label} <strong>${b.n}</strong></span>`).join("")}</em></div>`).join("")}</div>
     </div>
     <div class="wlist">${list.map(o => `
       <button data-id="${o.no}">
