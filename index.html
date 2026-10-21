@@ -170,6 +170,13 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .lg b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .lg em { font-style: normal; color: var(--ink-3); }
 .cap { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+/* Outbound / Inbound breakdown under a bar */
+.brk { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 5px 10px; align-items: baseline; font-size: 12.5px; color: var(--ink-2); }
+.brk > div { display: contents; }
+.brk i { width: 9px; height: 9px; border-radius: 2px; align-self: center; }
+.brk b { color: var(--ink); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.brk em { font-style: normal; color: var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.brk-foot { display: flex; justify-content: flex-end; margin-top: -6px; }
 
 /* duo (Outbound | Inbound side by side) */
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -838,26 +845,25 @@ function tileTotal(paid) {
   $("t-total").innerHTML = head("Total paid", "Total BAST value of invoices whose paid date falls in the selected period.", scopeP()) + `
     <div><div class="big">${rpS(tot)}</div>
       <div class="line"><span><b>${paid.length}</b> ${paid.length === 1 ? "invoice" : "invoices"} paid</span>${pm === null ? "" : delta(tot, sum(paidIn(pm), o => o.value), "up")}</div></div>
-    ${sbar(rows.map(r => ({ v: r.v, c: r.col, tip: `${r.label}: ${rp(r.v)} · ${r.n} invoices · ${pct(r.v, tot)}%` })))}
-    <div class="tile-foot">
-      <div class="lg">${rows.map(r => `<span><i style="background:${r.col}"></i>${r.label} <b>${rpS(r.v)}</b></span>`).join("")}</div>
-      ${paid.length ? `<button class="link" data-act="paid">View →</button>` : ""}
-    </div>`;
+    <div style="display:flex;flex-direction:column;gap:9px">
+      ${sbar(rows.map(r => ({ v: r.v, c: r.col, tip: `${r.label}: ${rp(r.v)} · ${plural(r.n, "invoice")} · ${pct(r.v, tot)}%` })))}
+      <div class="brk">${rows.map(r => `<div data-tip="${esc(`${r.label}: ${rp(r.v)}`)}"><i style="background:${r.col}"></i><span>${r.label}</span><b>${rpS(r.v)}</b><em>${plural(r.n, "invoice")} · ${pct(r.v, tot)}%</em></div>`).join("")}</div>
+    </div>
+    ${paid.length ? `<div class="tile-foot brk-foot"><button class="link" data-act="paid">View →</button></div>` : ""}`;
 }
 
 function tileReceived() {
   const rec = ORDERS.filter(o => inYM(o.submit, periodSel()));
   const rows = SEGS.map(s => { const g = rec.filter(o => o.seg === s.k); return { ...s, n: g.length, v: sum(g, o => o.value) }; });
-  const paidN = rec.filter(o => o.status === "paid").length;
   const pm = prevMonth();
-  $("t-received").innerHTML = head("Invoices received", "Invoices whose submit date falls in the selected period, and how many of them are already paid.", scopeP()) + `
+  $("t-received").innerHTML = head("Invoices received", "Invoices whose submit date falls in the selected period, whatever their status is now.", scopeP()) + `
     <div><div class="big">${rec.length}<small>${rec.length === 1 ? "invoice" : "invoices"}</small></div>
-      <div class="line"><span><b>${rpS(sum(rec, o => o.value))}</b></span><span>·</span><span><b>${pct(paidN, rec.length)}%</b> already paid</span>${pm === null ? "" : delta(rec.length, receivedIn(pm).length, null)}</div></div>
-    ${sbar(rows.map(r => ({ v: r.n, c: r.col, tip: `${r.label}: ${r.n} invoices · ${rp(r.v)}` })))}
-    <div class="tile-foot">
-      <div class="lg">${rows.map(r => `<span><i style="background:${r.col}"></i>${r.label} <b>${r.n}</b></span>`).join("")}</div>
-      ${rec.length ? `<button class="link" data-act="received">View →</button>` : ""}
-    </div>`;
+      <div class="line"><span><b>${rpS(sum(rec, o => o.value))}</b> total value</span>${pm === null ? "" : delta(rec.length, receivedIn(pm).length, null)}</div></div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      ${sbar(rows.map(r => ({ v: r.n, c: r.col, tip: `${r.label}: ${plural(r.n, "invoice")} · ${rp(r.v)}` })))}
+      <div class="brk">${rows.map(r => `<div data-tip="${esc(`${r.label}: ${rp(r.v)}`)}"><i style="background:${r.col}"></i><span>${r.label}</span><b>${plural(r.n, "invoice")}</b><em>${rpS(r.v)} · ${pct(r.n, rec.length)}%</em></div>`).join("")}</div>
+    </div>
+    ${rec.length ? `<div class="tile-foot brk-foot"><button class="link" data-act="received">View →</button></div>` : ""}`;
 }
 
 function tileDays(paid) {
