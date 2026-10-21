@@ -132,7 +132,7 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
   flex: 1; min-height: 0; display: grid; gap: 14px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "k1 k2 k3 k4" "trend trend speed partners" "waiting waiting returns partners";
+  grid-template-areas: "k1 k2 k3 speed" "trend trend partners returns" "open waiting waiting returns";
 }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; }
 .tile-h { display: flex; align-items: center; gap: 6px; min-height: 22px; }
@@ -242,10 +242,10 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .chart text { font-family: var(--f-body); }
 
 /* buckets */
-.bars { display: flex; flex-direction: column; gap: 10px; margin: auto 0; }
+.bars { display: flex; flex-direction: column; gap: 3px; margin: auto 0; }
 .bars .row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 48px; align-items: center; gap: 10px; font-size: 12.5px; }
 .bars .row .l b { display: block; font-weight: 700; white-space: nowrap; }
-.bars .row .l span { display: block; font-size: 11px; color: var(--ink-3); }
+.bars .row .l span { display: block; font-size: 11px; line-height: 1.25; color: var(--ink-3); }
 .bars .row .track { height: 12px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .bars .row .track span { display: block; height: 100%; border-radius: 4px; background: var(--bar); }
 .bars .row .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -264,7 +264,7 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 
 /* waiting list */
 .wlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
-.wlist button { display: grid; grid-template-columns: 96px minmax(0, 1fr) 130px 80px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 5px 6px; text-align: left; cursor: pointer; }
+.wlist button { display: grid; grid-template-columns: 96px minmax(0, 1fr) 130px 80px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 4px 6px; text-align: left; cursor: pointer; }
 .wlist button:first-child { border-top: 0; }
 .wlist button:hover { background: var(--surface-2); }
 .wlist .who b { display: block; font-weight: 700; font-size: 13px; }
@@ -277,7 +277,7 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .wgrp { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .wgrp > div { border-left: 3px solid; padding: 1px 0 1px 9px; min-width: 0; }
 .wgrp span { display: block; font-size: 11.5px; line-height: 1.35; font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wgrp em { display: block; font-style: normal; font-size: 11px; line-height: 1.3; color: var(--ink-3); white-space: nowrap; }
+.wgrp em { display: block; font-style: normal; font-size: 11px; line-height: 1.2; color: var(--ink-3); white-space: nowrap; }
 .wgrp b { display: block; font: 800 18px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
 .wgrp b small { font: 600 11.5px var(--f-body); color: var(--ink-2); margin-left: 4px; }
 .srcchip { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 99px; padding: 1px 6px 1px 9px; font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -455,15 +455,15 @@ td.partner { font-weight: 600; }
   #v-dash { height: auto; }
   .dash { grid-template-rows: none; grid-auto-rows: minmax(min-content, auto); }
   .tile.t-trend, .tile.t-wait { min-height: 320px; }
-  .tile.t-partners { min-height: 520px; }
+  .tile.t-partners { min-height: 320px; }
 }
 @media (max-width: 1500px) {
-  .dash { grid-template-areas: "k1 k2 k3 k4" "trend trend trend trend" "speed speed returns returns" "waiting waiting partners partners"; }
+  .dash { grid-template-areas: "k1 k2 k3 speed" "trend trend trend trend" "open waiting waiting waiting" "partners partners returns returns"; }
   .tile.t-partners { min-height: 0; }
   .guide { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 1480px) {
-  .dash { grid-template-areas: "k1 k1 k2 k2" "k3 k3 k4 k4" "trend trend trend trend" "speed speed returns returns" "waiting waiting partners partners"; }
+  .dash { grid-template-areas: "k1 k1 k2 k2" "k3 k3 speed speed" "trend trend trend trend" "open open waiting waiting" "partners partners returns returns"; }
 }
 @media (max-width: 1600px) {
   .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -473,7 +473,7 @@ td.partner { font-weight: 600; }
 }
 @media (max-width: 1180px) {
   .dash { grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "k1 k2" "k3 k4" "trend trend" "speed returns" "waiting waiting" "partners partners"; }
+    grid-template-areas: "k1 k2" "k3 speed" "trend trend" "open open" "waiting waiting" "partners returns"; }
 }
 @media (max-width: 960px) {
   html, body { height: auto; }
@@ -487,7 +487,7 @@ td.partner { font-weight: 600; }
   .nav .sdot { margin-left: 0; }
   .main { overflow: visible; }
   .page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k1" "k2" "k3" "k4" "trend" "speed" "returns" "waiting" "partners"; }
+  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k1" "k2" "k3" "speed" "trend" "open" "waiting" "partners" "returns"; }
   .wlist button { grid-template-columns: minmax(0, 1fr) 70px; }
   .wlist .st, .wlist .amt { display: none; }
   .filters .q input, .filters select { width: 100%; max-width: 100%; }
@@ -558,7 +558,7 @@ td.partner { font-weight: 600; }
         <article class="tile" style="grid-area:k1" id="t-total"></article>
         <article class="tile" style="grid-area:k2" id="t-received"></article>
         <article class="tile" style="grid-area:k3" id="t-days"></article>
-        <article class="tile" style="grid-area:k4" id="t-open"></article>
+        <article class="tile" style="grid-area:open" id="t-open"></article>
         <article class="tile t-trend" style="grid-area:trend" id="t-trend"></article>
         <article class="tile" style="grid-area:speed" id="t-speed"></article>
         <article class="tile t-partners" style="grid-area:partners" id="t-partners"></article>
@@ -929,7 +929,8 @@ function tileOpen() {
       <div class="line"><span><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</span></div></div>
     ${open.length ? `<table class="otab"><colgroup><col class="lbl"><col><col><col class="tot"></colgroup><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
       ${SEGS.map(sg => `<tr><th><i style="background:${sg.col}"></i>${sg.label}</th>${cell(sg.k, "returned")}${cell(sg.k, "review")}<td class="tot">${open.filter(o => o.seg === sg.k).length}</td></tr>`).join("")}
-    </tbody></table>` : `<p class="empty-note">Nothing waiting from ${cumName()}.</p>`}`;
+    </tbody></table>
+    <div class="tile-foot"><span class="hint">Click a number to see those invoices</span><button class="link" data-act="unpaid">View all ${open.length} →</button></div>` : `<p class="empty-note">Nothing waiting from ${cumName()}.</p>`}`;
 }
 
 function niceMax(v) {
