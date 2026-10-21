@@ -290,6 +290,8 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .duo .mm { gap: 5px; }
 .duo .mm button { border: 0; cursor: pointer; font-family: inherit; }
 .duo .mm button b { font-weight: 800; }
+.duo .mm button svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.duo .mm button em { margin-left: 1px; }
 .duo .mm button:hover { filter: brightness(.96); }
 .rlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
 .rlist button { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: start; border: 0; background: transparent; text-align: left; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
@@ -915,8 +917,8 @@ function tileDays(paid) {
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
         <div class="n">${c.n ? src(c) : "None paid"}</div>
         ${c.n ? `<div class="n mm">
-          <button class="delta good" data-avg="${c.k}" data-dir="asc" data-tip="${esc(`${c.fast} of ${plural(c.n, c.k + " invoice")} paid within 1 month (≤ 30 days after submit)<br>Fastest: ${c.min} days<br><i>Click to see the invoices, fastest first</i>`)}">Under 1 month <b>${c.fast}</b></button>
-          <button class="delta bad" data-avg="${c.k}" data-tip="${esc(`${c.slow} of ${plural(c.n, c.k + " invoice")} took more than 2 months (> 60 days after submit)<br>Slowest: ${c.max} days<br><i>Click to see the invoices, slowest first</i>`)}">Over 2 months <b>${c.slow}</b></button>
+          <button class="delta good" data-avg="${c.k}" data-dir="asc" data-tip="${esc(`${c.fast} of ${plural(c.n, c.k + " invoice")} paid within 1 month (≤ 30 days after submit)<br>Fastest: ${c.min} days<br><i>Click to see the invoices, fastest first</i>`)}"><svg viewBox="0 0 24 24" style="fill:currentColor"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg><b>${c.fast}</b><em>≤30d</em></button>
+          <button class="delta bad" data-avg="${c.k}" data-tip="${esc(`${c.slow} of ${plural(c.n, c.k + " invoice")} took more than 2 months (> 60 days after submit)<br>Slowest: ${c.max} days<br><i>Click to see the invoices, slowest first</i>`)}"><svg viewBox="0 0 24 24"><path d="M5 22h14M5 2h14M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4a2 2 0 0 0 .6-1.4V2"/></svg><b>${c.slow}</b><em>&gt;60d</em></button>
         </div>` : ""}
       </div>`).join("")}</div>
     <div class="tile-foot"><span class="hint">Based on invoices paid in ${periodShort()}<span class="f"> · paid date − submit date</span></span></div>`;
