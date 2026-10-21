@@ -177,6 +177,12 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .brk b { color: var(--ink); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .brk em { font-style: normal; color: var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .brk-foot { display: flex; justify-content: flex-end; margin-top: -6px; }
+#t-total, #t-received { container-type: inline-size; }
+/* narrow tile: the count / share drops under the value */
+@container (max-width: 340px) {
+  .brk { grid-template-columns: auto minmax(0, 1fr) auto; gap: 1px 10px; }
+  .brk em { grid-column: 2 / -1; text-align: left; margin-bottom: 4px; font-size: 11.5px; }
+}
 
 /* duo (Outbound | Inbound side by side) */
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -847,7 +853,7 @@ function tileTotal(paid) {
       <div class="line"><span><b>${paid.length}</b> ${paid.length === 1 ? "invoice" : "invoices"} paid</span>${pm === null ? "" : delta(tot, sum(paidIn(pm), o => o.value), "up")}</div></div>
     <div style="display:flex;flex-direction:column;gap:9px">
       ${sbar(rows.map(r => ({ v: r.v, c: r.col, tip: `${r.label}: ${rp(r.v)} · ${plural(r.n, "invoice")} · ${pct(r.v, tot)}%` })))}
-      <div class="brk">${rows.map(r => `<div data-tip="${esc(`${r.label}: ${rp(r.v)}`)}"><i style="background:${r.col}"></i><span>${r.label}</span><b>${rpS(r.v)}</b><em>${plural(r.n, "invoice")} · ${pct(r.v, tot)}%</em></div>`).join("")}</div>
+      <div class="brk">${rows.map(r => `<div><i style="background:${r.col}"></i><span>${r.label}</span><b>${rp(r.v)}</b><em>${plural(r.n, "invoice")} · ${pct(r.v, tot)}%</em></div>`).join("")}</div>
     </div>
     ${paid.length ? `<div class="tile-foot brk-foot"><button class="link" data-act="paid">View →</button></div>` : ""}`;
 }
@@ -861,7 +867,7 @@ function tileReceived() {
       <div class="line"><span><b>${rpS(sum(rec, o => o.value))}</b> total value</span>${pm === null ? "" : delta(rec.length, receivedIn(pm).length, null)}</div></div>
     <div style="display:flex;flex-direction:column;gap:9px">
       ${sbar(rows.map(r => ({ v: r.n, c: r.col, tip: `${r.label}: ${plural(r.n, "invoice")} · ${rp(r.v)}` })))}
-      <div class="brk">${rows.map(r => `<div data-tip="${esc(`${r.label}: ${rp(r.v)}`)}"><i style="background:${r.col}"></i><span>${r.label}</span><b>${plural(r.n, "invoice")}</b><em>${rpS(r.v)} · ${pct(r.n, rec.length)}%</em></div>`).join("")}</div>
+      <div class="brk">${rows.map(r => `<div><i style="background:${r.col}"></i><span>${r.label}</span><b>${plural(r.n, "invoice")}</b><em>${rp(r.v)} · ${pct(r.n, rec.length)}%</em></div>`).join("")}</div>
     </div>
     ${rec.length ? `<div class="tile-foot brk-foot"><button class="link" data-act="received">View →</button></div>` : ""}`;
 }
