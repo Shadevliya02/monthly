@@ -872,7 +872,7 @@ function tileReceived() {
   const pm = prevMonth();
   $("t-received").innerHTML = head("Invoices received", "Invoices whose submit date falls in the selected period, whatever their status is now.", scopeP()) + `
     <div><div class="big">${rec.length}<small>${rec.length === 1 ? "invoice" : "invoices"}</small></div>
-      <div class="line"><span><b>${rpS(sum(rec, o => o.value))}</b> total value</span>${pm === null ? "" : delta(rec.length, receivedIn(pm).length, null)}</div></div>
+      <div class="line"><span><b>${rpS(sum(rec, o => o.value))}</b> total value</span>${pm === null ? "" : delta(rec.length, receivedIn(pm).length, "up")}</div></div>
     <div style="display:flex;flex-direction:column;gap:9px">
       ${sbar(rows.map(r => ({ v: r.n, c: r.col, tip: `${r.label}: ${plural(r.n, "invoice")} · ${rp(r.v)}` })))}
       <div class="brk">${rows.map(r => `<div><i style="background:${r.col}"></i><span>${r.label}</span><b>${plural(r.n, "invoice")}</b><em>${rp(r.v)} · ${pct(r.n, rec.length)}%</em></div>`).join("")}</div>
