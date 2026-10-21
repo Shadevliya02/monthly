@@ -1073,9 +1073,9 @@ function tileReturns() {
   const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
   const paidR = withR.filter(o => o.paid);
   const ag = { rev: avg(withR, o => o.aging.rev), fix: avg(withR, o => o.aging.fix), pay: avg(paidR, o => o.aging.pay) };
-  $("t-returns").innerHTML = head("Return history", "Returns whose return date falls in the selected period, from invoices with recorded return dates. Shows where the time went: TDE review, partner fixing, and payment.", scopeP()) + `
-    <div><div class="big">${cycles.length}<small>returns</small></div>
-      <div class="line"><span>on <b>${withR.length}</b> outbound invoices · partner needs <b>${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> per fix</span></div></div>
+  $("t-returns").innerHTML = head("Return history", "Invoices returned to the partner in the selected period (by return date), from invoices with recorded return dates. One invoice can be returned more than once. Shows where the time went: TDE review, partner fixing, and payment.", scopeP()) + `
+    <div><div class="big">${withR.length}<small>${withR.length === 1 ? "invoice" : "invoices"} returned</small></div>
+      <div class="line"><span><b>${cycles.length}</b> ${cycles.length === 1 ? "return" : "returns"} in total · partner needs <b>${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> per fix</span></div></div>
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="cap">Where the time goes (avg days per invoice)</div>
       ${sbar(["rev", "fix", "pay"].map(k => ({ v: ag[k], c: STAGE[k].c, tip: `${STAGE[k].l}: ${Math.round(ag[k])} days on average` })))}
