@@ -287,6 +287,10 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .srcchip b { color: var(--ink); font-weight: 700; }
 .srcchip svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .srcchip:hover { background: var(--surface-2); color: var(--ink); }
+.duo .mm { gap: 5px; }
+.duo .mm button { border: 0; cursor: pointer; font-family: inherit; }
+.duo .mm button b { font-weight: 800; }
+.duo .mm button:hover { filter: brightness(.96); }
 .rlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
 .rlist button { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: start; border: 0; background: transparent; text-align: left; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
 .rlist button:hover { background: var(--surface-2); }
@@ -904,13 +908,16 @@ function tileDays(paid) {
     const leads = g.map(o => o.lead).sort((a, b) => a - b);
     return { ...s, n: g.length, tot: sum(g, o => o.lead), a: g.length ? Math.round(avg(g, o => o.lead)) : null, pa: pg.length ? avg(pg, o => o.lead) : null, min: leads[0], max: leads[leads.length - 1] };
   });
-  const src = c => `<button class="srcchip" data-avg="${c.k}" data-tip="${esc(`${c.tot} days ÷ ${plural(c.n, "invoice")} = <b>${c.a} days</b> on average` + (c.n > 1 ? `<br>Fastest ${c.min} days · slowest ${c.max} days` : "") + `<br><i>Click to see these invoices.</i>`)}"><b>${c.n}</b> ${c.n === 1 ? "invoice" : "invoices"}<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>`;
+  const src = c => `<button class="srcchip" data-avg="${c.k}" data-tip="${esc(`${c.tot} days ÷ ${plural(c.n, "invoice")} = <b>${c.a} days</b> on average` + (c.pa !== null ? `<br>${MONTHS[prevMonth()]}: ${Math.round(c.pa)} days on average` : "") + `<br><i>Click to see these invoices.</i>`)}"><b>${c.n}</b> ${c.n === 1 ? "invoice" : "invoices"}<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>`;
   $("t-days").innerHTML = head("Average days to get paid", "For each invoice paid in the selected period: paid date minus submit date, in calendar days. The number shown is the average per type. Lower is better.", scopeP()) + `
     <div class="duo">${cells.map(c => `
       <div><div class="k"><i style="background:${c.col}"></i>${c.k}</div>
         <div class="big">${c.a === null ? "–" : c.a}<small>${c.a === null ? "" : "days"}</small></div>
         <div class="n">${c.n ? src(c) : "None paid"}</div>
-        ${c.a !== null && c.pa !== null ? `<div class="n">${speedDelta(c.a, c.pa)}</div>` : ""}
+        ${c.n > 1 ? `<div class="n mm">
+          <button class="delta good" data-avg="${c.k}" data-dir="asc" data-tip="${esc(`Fastest ${c.k} invoice: paid ${c.min} days after submit<br><i>Click to see the invoices, fastest first</i>`)}">Fastest <b>${c.min}d</b></button>
+          <button class="delta bad" data-avg="${c.k}" data-tip="${esc(`Slowest ${c.k} invoice: paid ${c.max} days after submit<br><i>Click to see the invoices, slowest first</i>`)}">Slowest <b>${c.max}d</b></button>
+        </div>` : ""}
       </div>`).join("")}</div>
     <div class="tile-foot"><span class="hint">Based on invoices paid in ${periodShort()}<span class="f"> · paid date − submit date</span></span></div>`;
 }
@@ -1363,7 +1370,7 @@ document.addEventListener("click", e => {
     return;
   }
   const av = t.closest("[data-avg]");
-  if (av) { go("paid", { kind: av.dataset.avg === "Inbound" ? "inbound" : "outbound", month: periodSel() }); state.sort = { key: "days", dir: -1 }; renderTable(); return; }
+  if (av) { go("paid", { kind: av.dataset.avg === "Inbound" ? "inbound" : "outbound", month: periodSel() }); state.sort = { key: "days", dir: av.dataset.dir === "asc" ? 1 : -1 }; renderTable(); return; }
   const op = t.closest("[data-open]");
   if (op) { const [seg, st] = op.dataset.open.split("|"); go(st, { kind: seg === "Inbound" ? "inbound" : "outbound", smonth: cumSel() }); return; }
   const g = t.closest("[data-go]");
