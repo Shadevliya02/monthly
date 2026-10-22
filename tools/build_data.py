@@ -24,6 +24,9 @@ DATA = ROOT / "data"
 BASE = DATA / "Order_Outbound_Inbound_2026.xlsx"
 OUT = ROOT / "data.js"
 
+# partners left out of the dashboard entirely (all their invoices are dropped)
+EXCLUDE_PARTNERS = {"PT Sarana Komunikasi Data"}
+
 # accepted header names per field (exports are not always consistent)
 COLS = {
     "no": ["No.", "No"],
@@ -127,6 +130,12 @@ def main():
                 added += 1
         sources.append(path.name)
         stats.append(f"{path.name}: {updated} updated, {added} added")
+
+    excluded = {clean(p).lower() for p in EXCLUDE_PARTNERS}
+    dropped = [o for o in orders if o["partner"].lower() in excluded]
+    orders = [o for o in orders if o["partner"].lower() not in excluded]
+    if dropped:
+        stats.append(f"left out {len(dropped)} invoices from: {', '.join(sorted(EXCLUDE_PARTNERS))}")
 
     returns = {key(k): v for k, v in json.loads((DATA / "return_dates.json").read_text()).items() if not k.startswith("_")}
     for o in orders:
