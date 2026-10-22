@@ -1009,14 +1009,9 @@ function tileOpen() {
   t.classList.toggle("alert", ret.length > 0);
   t.innerHTML = head("Not paid yet", `Invoices submitted from January up to the selected month (${cumName()}) that are still in review or returned, status as of today.`, scopeC(),
       ret.length ? `<span class="alert-dot" data-tip="${ret.length} returned invoices need follow-up">!</span>` : "") + `
-    <div class="split">
+    <div>
       <div><div class="big">${open.length}<small>invoices</small></div>
         <div class="line"><span><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</span></div></div>
-      ${open.length ? `<div class="mside"><div class="cap">By submit month</div>${miniBars(MS.slice(0, (state.period === "year" ? lastDataMonth() : state.period) + 1).map((m, i) => {
-        const g = open.filter(o => inYM(o.submit, i));
-        return { l: m, parts: SEGS.map(sg => ({ v: g.filter(o => o.seg === sg.k).length, c: sg.col })), attrs: g.length ? `data-ubm="${i}"` : "",
-          tip: `<b>Submitted in ${MONTHS[i]} ${YEAR}</b>, not paid yet<br>` + SEGS.map(sg => `${sg.label}: ${g.filter(o => o.seg === sg.k).length}`).join("<br>") + (g.length ? "<br><i>Click to see them</i>" : "") };
-      }))}</div>` : ""}
     </div>
     ${open.length ? `<table class="otab"><colgroup><col class="lbl"><col><col><col class="tot"></colgroup><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
       ${SEGS.map(sg => `<tr><th><i style="background:${sg.col}"></i>${sg.label}</th>${cell(sg.k, "returned")}${cell(sg.k, "review")}<td class="tot">${open.filter(o => o.seg === sg.k).length}</td></tr>`).join("")}
@@ -1153,25 +1148,18 @@ function tileReturns() {
   const sel = periodSel();
   const withR = ORDERS.filter(o => o.cycles.some(c => inYM(c[0], sel)));
   const cycles = withR.flatMap(o => o.cycles.filter(c => inYM(c[0], sel)));
-  /* returns per month (by return date), Jan up to the last month with data */
-  const rChart = `<div class="mside"><div class="cap">Returns per month</div>${miniBars(MS.slice(0, lastDataMonth() + 1).map((m, i) => {
-    const n = ORDERS.reduce((a, o) => a + o.cycles.filter(c => inYM(c[0], i)).length, 0);
-    return { l: m, parts: [{ v: n, c: "var(--bad)" }], dim: sel !== "year" && +sel !== i, on: +sel === i && sel !== "year", attrs: `data-period="${i}"`,
-      tip: `<b>${MONTHS[i]} ${YEAR}</b><br>${plural(n, "return")} recorded<br><i>Click to show this month</i>` };
-  }))}</div>`;
   if (!withR.length) {
     $("t-returns").innerHTML = head("Returned before payment", "Paid invoices that were returned to the partner and resubmitted before they were paid, counted by return date in the selected period.", scopeP()) +
-      `<div class="split"><p class="empty-note">No returns recorded in ${periodName()}.</p>${rChart}</div><div class="tile-foot"><span class="hint">Return dates are recorded for ${ORDERS.filter(o => o.cycles.length).length} paid invoices</span><button class="link" data-go="history">View →</button></div>`;
+      `<p class="empty-note">No returns recorded in ${periodName()}.</p><div class="tile-foot"><span class="hint">Return dates are recorded for ${ORDERS.filter(o => o.cycles.length).length} paid invoices</span><button class="link" data-go="history">View →</button></div>`;
     return;
   }
   const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
   const paidR = withR.filter(o => o.paid);
   const ag = { rev: avg(withR, o => o.aging.rev), fix: avg(withR, o => o.aging.fix), pay: avg(paidR, o => o.aging.pay) };
   $("t-returns").innerHTML = head("Returned before payment", "Paid invoices that were returned to the partner and resubmitted before they were paid, counted by return date in the selected period. One invoice can be returned more than once. The bar shows where the time went from submit to paid: TDE review, partner fixing, and payment.", scopeP()) + `
-    <div class="split">
+    <div>
       <div><div class="big">${withR.length}<small>paid ${withR.length === 1 ? "invoice was" : "invoices were"} returned first</small></div>
         <div class="line"><span><b>${cycles.length}</b> ${cycles.length === 1 ? "return" : "returns"} · partner needs <b>${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> per fix</span></div></div>
-      ${rChart}
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="cap">Where the time went, submit → paid (avg days per invoice)</div>
