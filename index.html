@@ -1385,8 +1385,9 @@ document.addEventListener("click", e => {
   if (tr) { state.trendMode = tr.dataset.trend; tileTrend(); return; }
   const act = t.closest("[data-act]");
   if (act) {
-    if (act.dataset.act === "paid") go("paid", { month: periodSel() });
-    if (act.dataset.act === "received") go("received", { smonth: periodSel() });
+    /* oldest date first, so the list reads 1, 2, 3 … through the period */
+    if (act.dataset.act === "paid") { go("paid", { month: periodSel() }); state.sort = { key: "paid", dir: 1 }; renderTable(); }
+    if (act.dataset.act === "received") { go("received", { smonth: periodSel() }); state.sort = { key: "submit", dir: 1 }; renderTable(); }
     if (act.dataset.act === "unpaid") go("unpaid", { smonth: cumSel() });
     return;
   }
