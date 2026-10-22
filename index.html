@@ -233,22 +233,32 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .over small { font-size: 11.5px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* the KPI tiles get narrow on laptop screens: compact the header chips and drop the formula note */
 #t-days, #t-open, #t-returns { container-type: inline-size; }
-/* number on the left, a small chart on the right that takes any spare height */
-.split { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px; }
-.split .mside { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
-.mini { flex: 1; display: flex; gap: 3px; min-height: 44px; }
-.mb { flex: 1; min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center; gap: 1px; cursor: pointer; }
-.mb em { font: 700 10.5px/1.2 var(--f-body); color: var(--ink); font-variant-numeric: tabular-nums; min-height: 13px; }
-.mb-bar { position: relative; width: 100%; border-bottom: 1px solid var(--line); }
-.mb-bar > div { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: min(22px, 72%); display: flex; flex-direction: column-reverse; gap: 1px; border-radius: 3px 3px 0 0; overflow: hidden; }
-.mb-bar span { display: block; min-height: 1px; }
-.mb small { font-size: 10px; color: var(--ink-3); white-space: nowrap; }
-.mb.on small { color: var(--ink); font-weight: 800; }
-.mb.dim .mb-bar > div { opacity: .35; }
-.mb:hover .mb-bar > div { filter: brightness(.9); }
+/* number on the left, a few key figures on the right */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: center; }
+.kv { display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--line); padding-left: 16px; min-width: 0; }
+.kv > div, .kv > button { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: inherit; font-size: 12px; color: var(--ink-2); border: 0; background: none; padding: 0; text-align: left; min-width: 0; }
+.kv > button { cursor: pointer; border-radius: 5px; }
+.kv > button:hover span { text-decoration: underline; }
+.kv span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kv b { font: 800 14px/1.25 var(--f-display); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kv b small { font: 500 11px var(--f-body); color: var(--ink-3); margin-left: 3px; }
+.kv b.bad { color: var(--bad); }
+.kv b i { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin: 0 4px 1px 8px; }
+.kv b i:first-child { margin-left: 0; }
+/* a list that takes whatever height its tile has left and shows as many rows as fit */
+.fillbox { flex: 1 1 auto; position: relative; min-height: 140px; }
+.fillbox > * { position: absolute; inset: 0; }
+/* one-screen wall: rows have fixed heights, so the list just takes what is left (at least one row) */
+@media (min-width: 1601px) and (min-height: 1001px) {
+  .dash:not(.grow) .fillbox { min-height: 48px; }
+  /* one line per returned invoice so more of them fit */
+  .dash:not(.grow) .rlist button { padding: 3px 6px; }
+  .dash:not(.grow) .rlist .d { -webkit-line-clamp: 1; }
+  .dash:not(.grow) .rlist .rv { flex-direction: row; align-items: baseline; gap: 10px; }
+}
 @container (max-width: 470px) {
   .split { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .mini { min-height: 70px; }
+  .kv { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 8px; }
 }
 @container (max-width: 320px) {
   .otab thead th .chip { padding: 1px 6px; font-size: 10.5px; }
@@ -306,12 +316,21 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .wlist button { display: grid; grid-template-columns: 96px minmax(0, 1fr) 130px 80px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 4px 6px 3px; text-align: left; cursor: pointer; }
 .wlist button:first-child { border-top: 0; }
 .wlist button:hover { background: var(--surface-2); }
-.wlist .who b { display: block; font-weight: 700; font-size: 13px; }
-.wlist .who span { display: block; font-size: 12px; color: var(--ink-2); overflow-wrap: anywhere; }
+.wlist .who { min-width: 0; }
+.wlist .who b { display: block; font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wlist .who span { display: block; font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wlist .who .amt2 { display: none; font-size: 12px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.wfill { min-height: 150px; }
+#t-waiting { container-type: inline-size; }
+@container (max-width: 600px) {
+  .wlist button { grid-template-columns: 92px minmax(0, 1fr) 72px; gap: 10px; }
+  .wlist .amt { display: none; }
+  .wlist .who .amt2 { display: inline; }
+}
 .wlist .amt { text-align: right; font-variant-numeric: tabular-nums; font-size: 12.5px; }
 .wlist .age { text-align: right; }
 .wlist .age b { display: block; font: 800 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
-.wlist .age span { font-size: 11px; color: var(--ink-3); }
+.wlist .age span { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
 .foot-note { font-size: 11.5px; color: var(--ink-3); }
 .wgrp { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .wgrp > div { border-left: 3px solid; padding: 0 0 0 9px; min-width: 0; }
@@ -341,11 +360,16 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .duo .mm .bad { background: var(--bad-soft); }
 .duo .mm button:hover { filter: brightness(.96); }
 .rlist { display: flex; flex-direction: column; overflow: hidden; margin: 0 -6px; min-height: 0; }
-.rlist button { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: start; border: 0; background: transparent; text-align: left; padding: 3px 6px; border-radius: 8px; cursor: pointer; }
+.rlist button { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: start; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; padding: 5px 6px; cursor: pointer; flex: none; }
+.rlist button:first-child { border-top: 0; }
 .rlist button:hover { background: var(--surface-2); }
 .rlist b { font: 800 14px/1.3 var(--f-display); color: var(--bad); font-variant-numeric: tabular-nums; }
-.rlist span { font-size: 12px; color: var(--ink-2); line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rlist .d { font-size: 12px; color: var(--ink-2); line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .rlist em { font-style: normal; font-weight: 700; color: var(--ink); margin-right: 4px; }
+.rlist .rv { display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; line-height: 1.35; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rlist .rv strong { font-weight: 700; color: var(--ink); }
+.rlist .rv small { font-size: 11px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 4px; }
+.rlist .rv small i { width: 7px; height: 7px; border-radius: 2px; }
 .foot-note b { color: var(--ink); }
 
 /* ---------- Invoices page ---------- */
@@ -975,15 +999,11 @@ function tileDays(paid) {
           <button class="good" data-avg="${c.k}" data-dir="asc" data-tip="${esc(`${c.fast} of ${plural(c.n, c.k + " invoice")} paid within 1 month (≤ 30 days after submit)<br>Fastest: ${c.min} days<br><i>Click to see the invoices, fastest first</i>`)}"><i></i><span><span class="lf">Under 1 month</span><span class="ls">&lt; 1 month</span></span><b>${c.fast}<em> inv.</em></b></button>
           <button class="bad" data-avg="${c.k}" data-tip="${esc(`${c.slow} of ${plural(c.n, c.k + " invoice")} took more than 2 months (> 60 days after submit)<br>Slowest: ${c.max} days<br><i>Click to see the invoices, slowest first</i>`)}"><i></i><span><span class="lf">Over 2 months</span><span class="ls">&gt; 2 months</span></span><b>${c.slow}<em> inv.</em></b></button>
         </div>` : ""}
+        ${c.n ? `<div class="n" data-tip="${esc(`Fastest ${c.k} invoice: ${c.min} days · slowest: ${c.max} days (submit to paid, ${periodName()})`)}">Range <b>${c.min}–${c.max} days</b></div>` : ""}
       </div>`).join("")}</div>
     <div class="tile-foot"><span class="hint">Based on invoices paid in ${periodShort()}<span class="f"> · paid date − submit date</span></span></div>`;
 }
 
-/* small column chart that fills the height it is given; cols: [{ l, parts: [{ v, c }], tip, attrs, dim, on }] */
-function miniBars(cols) {
-  const max = Math.max(1, ...cols.map(c => sum(c.parts, p => p.v)));
-  return `<div class="mini">${cols.map(c => { const t = sum(c.parts, p => p.v); return `<div class="mb${c.dim ? " dim" : ""}${c.on ? " on" : ""}" ${c.attrs || ""} data-tip="${esc(c.tip)}"><em>${t || ""}</em><div class="mb-bar"><div style="height:${t / max * 100}%">${c.parts.filter(p => p.v).map(p => `<span style="flex:${p.v};background:${p.c}"></span>`).join("")}</div></div><small>${c.l}</small></div>`; }).join("")}</div>`;
-}
 /* one-screen wall (large display): tiles have fixed heights, so lists can show as many items as fit */
 const wallMode = () => matchMedia("(min-width: 1601px) and (min-height: 1001px)").matches && !document.querySelector(".dash.grow");
 /* drop trailing items of a list until it fits its box (keeps at least one); returns how many are left */
@@ -1007,11 +1027,18 @@ function tileOpen() {
   };
   const t = $("t-open");
   t.classList.toggle("alert", ret.length > 0);
+  const oldest = open.length ? open.reduce((a, b) => (b.waiting > a.waiting ? b : a), open[0]) : null;
+  const kv = oldest ? `<div class="kv">
+        <div data-tip="Average days since submit for these ${plural(open.length, "invoice")}, counted to today"><span>Average waiting</span><b>${Math.round(avg(open, o => o.waiting))}<small>days</small></b></div>
+        <button data-id="${oldest.no}" data-tip="${esc(`<b>${oldest.partner}</b><br>${oldest.desc}<br>Submitted ${fmtD(oldest.submit)} · ${rp(oldest.value)}<br><i>Click to see its timeline</i>`)}"><span>Longest waiting</span><b class="bad">${oldest.waiting}<small>days</small></b></button>
+        <div data-tip="${esc(`Total value of the ${plural(ret.length, "returned invoice")}: sent back to the partner to fix and resubmit`)}"><span>Value returned</span><b>${rpS(sum(ret, o => o.value))}</b></div>
+      </div>` : "";
   t.innerHTML = head("Not paid yet", `Invoices submitted from January up to the selected month (${cumName()}) that are still in review or returned, status as of today.`, scopeC(),
       ret.length ? `<span class="alert-dot" data-tip="${ret.length} returned invoices need follow-up">!</span>` : "") + `
-    <div>
+    <div class="${kv ? "split" : ""}">
       <div><div class="big">${open.length}<small>invoices</small></div>
         <div class="line"><span><b>${rpS(sum(open, o => o.value))}</b> waiting to be paid</span></div></div>
+      ${kv}
     </div>
     ${open.length ? `<table class="otab"><colgroup><col class="lbl"><col><col><col class="tot"></colgroup><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
       ${SEGS.map(sg => `<tr><th><i style="background:${sg.col}"></i>${sg.label}</th>${cell(sg.k, "returned")}${cell(sg.k, "review")}<td class="tot">${open.filter(o => o.seg === sg.k).length}</td></tr>`).join("")}
@@ -1039,7 +1066,19 @@ function tileTrend() {
   const val = (d, i) => mode === "value" ? d.by[i].v : d.by[i].n;
   const tot = d => mode === "value" ? d.v : d.n;
   const max = niceMax(Math.max(...data.map(tot)));
-  const W = 760, H = 250, L = 52, R = 8, T = 22, B = 26;
+  const title = rec ? "Invoices received per month" : mode === "count" ? "Invoices paid per month" : "Paid per month";
+  const tipTxt = rec ? "Number of invoices by submit month." : mode === "count" ? "Number of invoices by paid month." : "Total BAST value by paid month.";
+  $("t-trend").innerHTML = head(title, tipTxt + " Click a bar to show that month on the whole dashboard.", scopeTxt(`${ICON.cal}Jan–Dec ${YEAR}`, "Always shows the whole year")) + `
+    <div class="trend-ctl">
+      <div class="lg">${SEGS.map(sg => `<span><i style="background:${sg.col}"></i>${sg.label}</span>`).join("")}</div>
+      <span class="seg" role="tablist" aria-label="Chart shows"><button class="${mode === "value" ? "on" : ""}" data-trend="value">Paid value</button><button class="${mode === "count" ? "on" : ""}" data-trend="count">Paid count</button><button class="${rec ? "on" : ""}" data-trend="received">Received</button></span>
+    </div>
+    <div class="chart"></div>`;
+  /* draw at the box's real size so the chart uses the whole width of the tile */
+  const box = $("t-trend").querySelector(".chart");
+  const narrow = matchMedia("(max-width: 960px)").matches;
+  const W = Math.max(narrow ? 640 : 420, Math.round(box.clientWidth) || 760), H = narrow ? 220 : Math.min(400, Math.max(170, Math.round(box.clientHeight) || 250));
+  const L = 52, R = 8, T = 22, B = 26;
   const bw = (W - L - R) / 12, x = m => L + m * bw, y = v => T + (1 - v / max) * (H - T - B);
   const fmt = v => mode === "value" ? rpS(v).replace("Rp ", "") : String(v);
   let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${rec ? "Invoices received per month" : "Paid per month"}">`;
@@ -1050,7 +1089,7 @@ function tileTrend() {
   }
   data.forEach(d => {
     const dim = state.period !== "year" && state.period !== d.m;
-    const cx = x(d.m) + bw * .2, w = bw * .6;
+    const w = Math.min(bw * .6, 58), cx = x(d.m) + (bw - w) / 2;
     const parts = SEGS.map((sg, i) => ({ sg, v: val(d, i) })).filter(p => p.v > 0);
     let acc = 0;
     parts.forEach((p, j) => {
@@ -1068,14 +1107,9 @@ function tileTrend() {
     s += `<rect x="${x(d.m)}" y="${T}" width="${bw}" height="${H - T}" fill="transparent" data-period="${d.m}" data-tip="${esc(tip)}" style="cursor:pointer"/>`;
   });
   s += "</svg>";
-  const title = rec ? "Invoices received per month" : mode === "count" ? "Invoices paid per month" : "Paid per month";
-  const tipTxt = rec ? "Number of invoices by submit month." : mode === "count" ? "Number of invoices by paid month." : "Total BAST value by paid month.";
-  $("t-trend").innerHTML = head(title, tipTxt + " Click a bar to show that month on the whole dashboard.", scopeTxt(`${ICON.cal}Jan–Dec ${YEAR}`, "Always shows the whole year")) + `
-    <div class="trend-ctl">
-      <div class="lg">${SEGS.map(sg => `<span><i style="background:${sg.col}"></i>${sg.label}</span>`).join("")}</div>
-      <span class="seg" role="tablist" aria-label="Chart shows"><button class="${mode === "value" ? "on" : ""}" data-trend="value">Paid value</button><button class="${mode === "count" ? "on" : ""}" data-trend="count">Paid count</button><button class="${rec ? "on" : ""}" data-trend="received">Received</button></span>
-    </div>
-    <div class="chart">${s}</div>`;
+  box.innerHTML = s;
+  /* very tall box (rows grew to fit a long list next to it): keep the chart at a readable height, centred */
+  if (!narrow && box.clientHeight > H + 2) Object.assign(box.firstChild.style, { height: H + "px", top: "50%", transform: "translateY(-50%)" });
 }
 
 const BUCKETS = [
@@ -1124,20 +1158,20 @@ const WAIT = [
 function tileWaiting() {
   const open = openInPeriod();
   const w = WAIT.map(b => { const g = open.filter(o => b.t(o.waiting)); return { ...b, n: g.length, by: SEGS.map(sg => ({ ...sg, n: g.filter(o => o.seg === sg.k).length })) }; });
-  const list = open.slice().sort((a, b) => b.waiting - a.waiting).slice(0, wallMode() ? 6 : 3);
-  $("t-waiting").innerHTML = head("Waiting longest for payment", `The same invoices as Not paid yet (submitted ${cumName()}, not paid yet), by days since submit counted to today. The bar groups all of them; the list shows the 3 waiting longest.`, scopeC()) + `
+  const list = open.slice().sort((a, b) => b.waiting - a.waiting).slice(0, 15);
+  $("t-waiting").innerHTML = head("Waiting longest for payment", `The same invoices as Not paid yet (submitted ${cumName()}, not paid yet), by days since submit counted to today. The bar groups all of them; the list shows the ones waiting longest, as many as fit.`, scopeC()) + `
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="cap">How long the ${plural(open.length, "invoice")} have been waiting since submit</div>
       ${sbar(w.map(x => ({ v: x.n, c: x.c, tip: `${x.l} (${x.d}): ${plural(x.n, "invoice")}` })))}
       <div class="wgrp">${w.map(x => `<div style="border-color:${x.c}" data-tip="${esc(`${x.l}: waiting ${x.d} since submit<br>` + x.by.map(b => `${b.label}: ${plural(b.n, "invoice")}`).join("<br>"))}"><span>${x.l}</span><b>${x.n}<small>${x.n === 1 ? "invoice" : "invoices"}</small></b><em>${x.by.map(b => `<span><i style="background:${b.col}"></i>${b.label} <strong>${b.n}</strong></span>`).join("")}</em></div>`).join("")}</div>
     </div>
-    <div class="wlist">${list.map(o => `
-      <button data-id="${o.no}">
+    <div class="fillbox wfill"><div class="wlist">${list.map(o => `
+      <button data-id="${o.no}" data-tip="${esc(`<b>${o.partner}</b><br>${o.desc}<br>${rp(o.value)} · submitted ${fmtD(o.submit)}<br><i>Click to see its timeline</i>`)}">
         <span class="st">${chip(o.status)}</span>
-        <span class="who"><b>${esc(o.partner)}</b><span>${esc(o.desc)}</span></span>
+        <span class="who"><b>${esc(o.partner)}</b><span><small class="amt2">${rpS(o.value)} · </small>${esc(o.desc)}</span></span>
         <span class="amt">${rp(o.value)}</span>
         <span class="age"><b>${o.waiting}</b><span>days waiting</span></span>
-      </button>`).join("")}</div>
+      </button>`).join("")}</div></div>
     ${open.length ? "" : `<p class="empty-note">Nothing waiting from ${cumName()}.</p>`}
     <div class="tile-foot"><span class="hint" id="w-hint">Click an invoice to see its timeline</span>${open.length ? `<button class="link" data-act="unpaid">View all ${open.length} →</button>` : ""}</div>`;
   const n = fitList($("t-waiting").querySelector(".wlist"));
@@ -1156,23 +1190,32 @@ function tileReturns() {
   const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
   const paidR = withR.filter(o => o.paid);
   const ag = { rev: avg(withR, o => o.aging.rev), fix: avg(withR, o => o.aging.fix), pay: avg(paidR, o => o.aging.pay) };
+  const ranked = withR.map(o => ({ o, n: o.cycles.filter(c => inYM(c[0], sel)).length })).sort((a, b) => b.n - a.n || b.o.aging.fix - a.o.aging.fix);
+  const multi = ranked.filter(r => r.n > 1).length;
+  const segCol = s => (SEGS.find(x => x.k === s) || SEGS[0]).col;
   $("t-returns").innerHTML = head("Returned before payment", "Paid invoices that were returned to the partner and resubmitted before they were paid, counted by return date in the selected period. One invoice can be returned more than once. The bar shows where the time went from submit to paid: TDE review, partner fixing, and payment.", scopeP()) + `
-    <div>
-      <div><div class="big">${withR.length}<small>paid ${withR.length === 1 ? "invoice was" : "invoices were"} returned first</small></div>
+    <div class="split">
+      <div><div class="big">${withR.length}<small>paid ${withR.length === 1 ? "invoice" : "invoices"} returned</small></div>
         <div class="line"><span><b>${cycles.length}</b> ${cycles.length === 1 ? "return" : "returns"} · partner needs <b>${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> per fix</span></div></div>
+      <div class="kv">
+        <div data-tip="${esc(SEGS.map(s => `${s.label}: ${plural(withR.filter(o => o.seg === s.k).length, "invoice")}`).join("<br>"))}"><span>By type</span><b>${SEGS.map(s => `<i style="background:${s.col}"></i>${withR.filter(o => o.seg === s.k).length}<small>${s.label}</small>`).join("")}</b></div>
+        <div data-tip="Total BAST value of these ${plural(withR.length, "invoice")}"><span>Total value</span><b>${rpS(sum(withR, o => o.value))}</b></div>
+        <div data-tip="Invoices sent back to the partner more than once in ${periodName()}"><span>Returned 2× or more</span><b class="${multi ? "bad" : ""}">${multi}<small>${multi === 1 ? "invoice" : "invoices"}</small></b></div>
+      </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="cap">Where the time went, submit → paid (avg days per invoice)</div>
       ${sbar(["rev", "fix", "pay"].map(k => ({ v: ag[k], c: STAGE[k].c, tip: `${STAGE[k].l}: ${Math.round(ag[k])} days on average` })))}
       <div class="lg">${["rev", "fix", "pay"].map(k => `<span><i style="background:${STAGE[k].c}"></i>${STAGE[k].l} <b>${Math.round(ag[k])}d</b></span>`).join("")}</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:4px;min-height:0">
-      <div class="cap">Returned most often</div>
-      <div class="rlist">${withR.map(o => ({ o, n: o.cycles.filter(c => inYM(c[0], sel)).length })).sort((a, b) => b.n - a.n || b.o.aging.fix - a.o.aging.fix).slice(0, wallMode() ? 5 : 3).map(({ o, n }) => `
-        <button data-id="${o.no}" data-tip="Returned ${n}× in ${periodName()} · click to see the timeline"><b>${n}×</b><span><em>${esc(o.partner)}</em>${esc(o.desc)}</span></button>`).join("")}</div>
+    <div style="display:flex;flex-direction:column;gap:4px;min-height:0;flex:1 1 auto">
+      <div class="cap" id="r-cap">Returned most often</div>
+      <div class="fillbox"><div class="rlist">${ranked.map(({ o, n }) => `
+        <button data-id="${o.no}" data-tip="${esc(`Returned ${n}× in ${periodName()} · partner took ${o.aging.fix} days to fix in total<br><i>Click to see the timeline</i>`)}"><b>${n}×</b><span class="d"><em>${esc(o.partner)}</em>${esc(o.desc)}</span><span class="rv"><strong>${rpS(o.value)}</strong><small><i style="background:${segCol(o.seg)}"></i>${o.seg}</small></span></button>`).join("")}</div></div>
     </div>
-    <div class="tile-foot"><span class="hint">Only paid invoices with recorded return dates (${ORDERS.filter(o => o.cycles.length).length} so far)</span><button class="link" data-go="history">View →</button></div>`;
-  fitList($("t-returns").querySelector(".rlist"));
+    <div class="tile-foot"><span class="hint">Only paid invoices with recorded return dates (${ORDERS.filter(o => o.cycles.length).length} so far)</span><button class="link" data-go="history">View all →</button></div>`;
+  const shown = fitList($("t-returns").querySelector(".rlist"));
+  if (shown < ranked.length) $("r-cap").textContent = `Returned most often · top ${shown} of ${ranked.length}`;
 }
 
 function renderDash() {
@@ -1184,6 +1227,7 @@ function renderDash() {
   dash.classList.remove("grow"); $("v-dash").classList.remove("grow");
   renderPeriods(); tileTotal(paid); tileReceived(); tileDays(paid); tileOpen(); tileTrend(); tileSpeed(paid); tilePartners(paid); tileWaiting(); tileReturns();
   if (wallMode() && [...dash.children].some(t => t.scrollHeight > t.clientHeight + 1)) { dash.classList.add("grow"); $("v-dash").classList.add("grow"); tileWaiting(); tileReturns(); }
+  tileTrend();   // drawn last, once every row has its final size
 }
 
 /* =================== INVOICES =================== */
