@@ -212,12 +212,22 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .otab .tot { font: 800 16px var(--f-display); font-variant-numeric: tabular-nums; }
 .otab thead th { position: static; background: none; border: 0; padding: 4px; color: var(--ink-2); }
 .otab tbody tr { cursor: default; }
-.otab tbody tr td, .otab tbody tr th { padding: 3px 4px; border-bottom: 0; background: none !important; vertical-align: middle; }
-.cellbtn { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 2px 0; font: 800 15px var(--f-display); font-variant-numeric: tabular-nums; cursor: pointer; }
+.otab tbody tr td, .otab tbody tr th { padding: 2px 4px; border-bottom: 0; background: none !important; vertical-align: middle; }
+.cellbtn { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 1px 0; font: 800 15px var(--f-display); font-variant-numeric: tabular-nums; cursor: pointer; }
 .cellbtn.returned { color: var(--bad); }
 .cellbtn.review { color: var(--warn); }
 .cellbtn:hover:not([disabled]) { background: var(--surface-2); }
 .cellbtn[disabled] { color: var(--ink-3); cursor: default; opacity: .6; }
+.over { display: flex; flex-direction: column; gap: 3px; margin-top: -4px; }
+.over button { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto 72px; align-items: center; gap: 8px; border: 0; border-radius: 7px; padding: 3px 10px; background: var(--bad-soft); cursor: pointer; font: inherit; font-size: 12.5px; text-align: left; }
+.over button:hover:not([disabled]) { filter: brightness(.96); }
+.over button[disabled] { background: var(--surface-2); cursor: default; }
+.over i { width: 9px; height: 9px; border-radius: 2px; }
+.over span { font-weight: 600; }
+.over b { font: 800 16px/1.1 var(--f-display); color: var(--bad); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.over button[disabled] b { color: var(--ink-3); }
+.over b em { font: 500 11.5px var(--f-body); color: var(--ink-2); }
+.over small { font-size: 11.5px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* the KPI tiles get narrow on laptop screens: compact the header chips and drop the formula note */
 #t-days, #t-open { container-type: inline-size; }
 @container (max-width: 320px) {
@@ -815,7 +825,7 @@ const SEGS = [
 ];
 
 /* ---------- state ---------- */
-const defaultsF = () => ({ q: "", kind: "all", partner: "all", status: "all", smonth: "all", month: "all", hist: false });
+const defaultsF = () => ({ q: "", kind: "all", partner: "all", status: "all", smonth: "all", month: "all", hist: false, age: "all" });
 const state = { view: "dash", nav: "dashboard", period: "year", trendMode: "value", dark: false, f: defaultsF(), sort: { key: "submit", dir: -1 }, page: 0, per: 20 };
 try {
   const p = localStorage.getItem("pm2-period"); if (p !== null) state.period = p === "year" ? "year" : +p;
@@ -944,6 +954,7 @@ function tileDays(paid) {
 const openInPeriod = () => ORDERS.filter(o => o.status !== "paid" && inSub(o.submit, cumSel()));
 function tileOpen() {
   const open = openInPeriod();
+  const over = open.filter(o => o.waiting > 30);
   const ret = open.filter(o => o.status === "returned");
   const cell = (seg, st) => {
     const g = open.filter(o => o.seg === seg && o.status === st);
@@ -958,7 +969,11 @@ function tileOpen() {
     ${open.length ? `<table class="otab"><colgroup><col class="lbl"><col><col><col class="tot"></colgroup><thead><tr><th></th><th>${chip("returned")}</th><th>${chip("review")}</th><th>Total</th></tr></thead><tbody>
       ${SEGS.map(sg => `<tr><th><i style="background:${sg.col}"></i>${sg.label}</th>${cell(sg.k, "returned")}${cell(sg.k, "review")}<td class="tot">${open.filter(o => o.seg === sg.k).length}</td></tr>`).join("")}
     </tbody></table>
-    <div class="tile-foot"><span class="hint">Click a number to see those invoices</span><button class="link" data-act="unpaid">View all ${open.length} →</button></div>` : `<p class="empty-note">Nothing waiting from ${cumName()}.</p>`}`;
+    <div class="over">
+      <div class="cap">Waiting over 1 month since submit</div>
+      ${SEGS.map(sg => { const g = over.filter(o => o.seg === sg.k); return `<button data-over="${sg.k}" ${g.length ? "" : "disabled"} data-tip="${esc(`${sg.label} invoices not paid yet, submitted more than 30 days ago<br>${plural(g.length, "invoice")} · ${rp(sum(g, o => o.value))}${g.length ? "<br><i>Click to see them</i>" : ""}`)}"><i style="background:${sg.col}"></i><span>${sg.label}</span><b>${g.length}<em> ${g.length === 1 ? "invoice" : "invoices"}</em></b><small>${rpS(sum(g, o => o.value))}</small></button>`; }).join("")}
+    </div>
+    <div class="tile-foot"><span class="hint">Click a number to see those invoices</span>${over.length ? `<button class="link" data-act="over30">View ${over.length} over 1 month →</button>` : ""}</div>` : `<p class="empty-note">Nothing waiting from ${cumName()}.</p>`}`;
 }
 
 function niceMax(v) {
@@ -1146,6 +1161,7 @@ function tableRows() {
     (f.partner === "all" || o.partner === f.partner) &&
     (f.status === "all" || (f.status === "unpaid" ? o.status !== "paid" : o.status === f.status)) &&
     (f.smonth === "all" || inSub(o.submit, String(f.smonth))) &&
+    (f.age === "all" || (!o.paid && o.waiting > 30)) &&
     (f.month === "all" || inYM(o.paid, f.month)) &&
     (!f.hist || o.cycles.length) &&
     (!q || (o.partner + " " + o.desc + " " + o.inv + " " + o.contract).toLowerCase().includes(q)));
@@ -1202,6 +1218,7 @@ function activeChips() {
   if (f.smonth !== "all") c.push(["smonth", "Submitted", monthL(f.smonth)]);
   if (f.month !== "all") c.push(["month", "Paid", monthL(f.month)]);
   if (f.hist) c.push(["hist", "Only", "with return dates"]);
+  if (f.age !== "all") c.push(["age", "Waiting", "over 1 month"]);
   return c.map(([k, l, v]) => `<button class="fchip" data-clear="${k}" aria-label="Remove filter ${esc(l)}"><span>${esc(l)}:</span><b>${esc(v)}</b><i>✕</i></button>`).join("");
 }
 function renderTable() {
@@ -1389,10 +1406,13 @@ document.addEventListener("click", e => {
     if (act.dataset.act === "paid") { go("paid", { month: periodSel() }); state.sort = { key: "paid", dir: 1 }; renderTable(); }
     if (act.dataset.act === "received") { go("received", { smonth: periodSel() }); state.sort = { key: "submit", dir: 1 }; renderTable(); }
     if (act.dataset.act === "unpaid") go("unpaid", { smonth: cumSel() });
+    if (act.dataset.act === "over30") go("unpaid", { smonth: cumSel(), age: "over30" });
     return;
   }
   const av = t.closest("[data-avg]");
   if (av) { go("paid", { kind: av.dataset.avg === "Inbound" ? "inbound" : "outbound", month: periodSel() }); state.sort = { key: "days", dir: av.dataset.dir === "asc" ? 1 : -1 }; renderTable(); return; }
+  const ov = t.closest("[data-over]");
+  if (ov) { go("unpaid", { kind: ov.dataset.over === "Inbound" ? "inbound" : "outbound", smonth: cumSel(), age: "over30" }); return; }
   const op = t.closest("[data-open]");
   if (op) { const [seg, st] = op.dataset.open.split("|"); go(st, { kind: seg === "Inbound" ? "inbound" : "outbound", smonth: cumSel() }); return; }
   const g = t.closest("[data-go]");
