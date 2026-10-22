@@ -1100,18 +1100,18 @@ function tileReturns() {
   const withR = ORDERS.filter(o => o.cycles.some(c => inYM(c[0], sel)));
   const cycles = withR.flatMap(o => o.cycles.filter(c => inYM(c[0], sel)));
   if (!withR.length) {
-    $("t-returns").innerHTML = head("Return history", "Returns whose return date falls in the selected period.", scopeP()) +
-      `<p class="empty-note">No returns recorded in ${periodName()}.</p><div class="tile-foot"><span class="hint">Return dates are recorded for ${ORDERS.filter(o => o.cycles.length).length} invoices</span><button class="link" data-go="history">View →</button></div>`;
+    $("t-returns").innerHTML = head("Returned before payment", "Paid invoices that were returned to the partner and resubmitted before they were paid, counted by return date in the selected period.", scopeP()) +
+      `<p class="empty-note">No returns recorded in ${periodName()}.</p><div class="tile-foot"><span class="hint">Return dates are recorded for ${ORDERS.filter(o => o.cycles.length).length} paid invoices</span><button class="link" data-go="history">View →</button></div>`;
     return;
   }
   const fix = cycles.filter(c => c[1]).map(c => days(c[0], c[1]));
   const paidR = withR.filter(o => o.paid);
   const ag = { rev: avg(withR, o => o.aging.rev), fix: avg(withR, o => o.aging.fix), pay: avg(paidR, o => o.aging.pay) };
-  $("t-returns").innerHTML = head("Return history", "Invoices returned to the partner in the selected period (by return date), from invoices with recorded return dates. One invoice can be returned more than once. Shows where the time went: TDE review, partner fixing, and payment.", scopeP()) + `
-    <div><div class="big">${withR.length}<small>${withR.length === 1 ? "invoice" : "invoices"} returned</small></div>
+  $("t-returns").innerHTML = head("Returned before payment", "Paid invoices that were returned to the partner and resubmitted before they were paid, counted by return date in the selected period. One invoice can be returned more than once. The bar shows where the time went from submit to paid: TDE review, partner fixing, and payment.", scopeP()) + `
+    <div><div class="big">${withR.length}<small>paid ${withR.length === 1 ? "invoice was" : "invoices were"} returned first</small></div>
       <div class="line"><span><b>${cycles.length}</b> ${cycles.length === 1 ? "return" : "returns"} in total · partner needs <b>${fix.length ? Math.round(avg(fix, x => x)) : "–"} days</b> per fix</span></div></div>
     <div style="display:flex;flex-direction:column;gap:6px">
-      <div class="cap">Where the time goes (avg days per invoice)</div>
+      <div class="cap">Where the time went, submit → paid (avg days per invoice)</div>
       ${sbar(["rev", "fix", "pay"].map(k => ({ v: ag[k], c: STAGE[k].c, tip: `${STAGE[k].l}: ${Math.round(ag[k])} days on average` })))}
       <div class="lg">${["rev", "fix", "pay"].map(k => `<span><i style="background:${STAGE[k].c}"></i>${STAGE[k].l} <b>${Math.round(ag[k])}d</b></span>`).join("")}</div>
     </div>
@@ -1120,7 +1120,7 @@ function tileReturns() {
       <div class="rlist">${withR.map(o => ({ o, n: o.cycles.filter(c => inYM(c[0], sel)).length })).sort((a, b) => b.n - a.n || b.o.aging.fix - a.o.aging.fix).slice(0, 2).map(({ o, n }) => `
         <button data-id="${o.no}" data-tip="Returned ${n}× in ${periodName()} · click to see the timeline"><b>${n}×</b><span><em>${esc(o.partner)}</em>${esc(o.desc)}</span></button>`).join("")}</div>
     </div>
-    <div class="tile-foot"><span class="hint">Return dates are recorded for ${ORDERS.filter(o => o.cycles.length).length} invoices only</span><button class="link" data-go="history">View →</button></div>`;
+    <div class="tile-foot"><span class="hint">Only paid invoices with recorded return dates (${ORDERS.filter(o => o.cycles.length).length} so far)</span><button class="link" data-go="history">View →</button></div>`;
 }
 
 function renderDash() {
@@ -1140,7 +1140,7 @@ const PRESETS = {
   returned: { title: "Returned", crumb: "Invoices · By status", desc: "Sent back to the partner to fix. These need follow-up.", f: { status: "returned" } },
   unpaid: { title: "Not paid yet", crumb: "Invoices · By status", desc: "Everything in review or returned, oldest first.", f: { status: "unpaid" }, sort: { key: "days", dir: -1 } },
   received: { title: "Invoices received", crumb: "Invoices", desc: "Invoices by the month they were submitted." },
-  history: { title: "Return history", crumb: "Invoices", desc: "Invoices with recorded return and resubmit dates, with their return aging.", f: { hist: true } },
+  history: { title: "Return history", crumb: "Invoices", desc: "Paid invoices that were returned and resubmitted before payment, with their return and resubmit dates and return aging.", f: { hist: true } },
 };
 const KIND_L = { outbound: "Outbound (all)", "out-xc": "Outbound · Cross Connect", "out-colo": "Outbound · Colocation", inbound: "Inbound" };
 const STATUS_L = { paid: "Paid", unpaid: "Not paid yet", review: "In review", returned: "Returned" };
