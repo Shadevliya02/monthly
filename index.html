@@ -95,7 +95,6 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .nav button.active .count { background: rgba(255,255,255,.22); }
 .side-foot { margin-top: auto; padding: 16px 12px 0; font-size: 11.5px; color: var(--side-ink-2); border-top: 1px solid rgba(255,255,255,.08); }
 .side-foot b { display: block; color: var(--side-ink); font-weight: 600; font-size: 12.5px; margin-top: 2px; }
-.side-foot .site-upd { display: block; margin-top: 8px; font-size: 11px; opacity: .8; }
 
 .main { overflow-y: auto; min-width: 0; }
 .page {
@@ -1431,12 +1430,11 @@ $("c-paid").textContent = ORDERS.filter(o => o.status === "paid").length;
 $("c-rev").textContent = ORDERS.filter(o => o.status === "review").length;
 $("c-ret").textContent = ORDERS.filter(o => o.status === "returned").length;
 $("c-hist").textContent = ORDERS.filter(o => o.cycles.length).length;
-/* data date = when data.js was built from the latest report (Jakarta time, written by build_data.py);
-   SITE_UPDATED = last change to the website itself (layout, wording) — bump it with each release */
+/* website updated = the later of: last change to the website itself (SITE_UPDATED, bump it with each release)
+   and the date data.js was built from the latest report (Jakarta time, written by build_data.py) */
 const SITE_UPDATED = "2026-10-22";
-const lastUpdate = (() => { const m = /^(\d{4}-\d{2}-\d{2})/.exec(SRC.built || ""); return m ? fmtD(m[1]) : "—"; })();
-$("source").innerHTML = `<span data-tip="Date of the latest invoice report loaded into this website">Data as of<b>${lastUpdate}</b></span>` +
-  `<span class="site-upd" data-tip="Last change to the website's layout or wording">Website updated ${fmtD(SITE_UPDATED)}</span>`;
+const lastUpdate = (() => { const m = /^(\d{4}-\d{2}-\d{2})/.exec(SRC.built || ""); const d = m && m[1] > SITE_UPDATED ? m[1] : SITE_UPDATED; return fmtD(d); })();
+$("source").innerHTML = `Website updated<b>${lastUpdate}</b>`;
 
 fillSelects(); applyTheme();
 go(location.hash.slice(1), {}, false);
