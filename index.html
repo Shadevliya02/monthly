@@ -99,7 +99,7 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .main { overflow-y: auto; min-width: 0; }
 .page {
   display: flex; flex-direction: column; gap: 14px; min-height: 100%;
-  padding-block: 18px 22px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 16px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
 }
 
 /* ---------- Page header ---------- */
@@ -129,10 +129,10 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 /* ---------- Dashboard grid ---------- */
 #v-dash { height: 100%; }
 .dash {
-  flex: 1; min-height: 0; display: grid; gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex: 1; min-height: 0; display: grid; gap: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "k1 k2 k3 speed" "trend trend partners returns" "open waiting waiting waiting";
+  grid-template-areas: "k1 k2 k3 sout sin" "trend trend partners returns returns" "open open waiting waiting waiting";
 }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; }
 .tile-h { display: flex; align-items: center; gap: 6px; min-height: 22px; }
@@ -255,6 +255,8 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .bars .row .track { height: 12px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .bars .row .track span { display: block; height: 100%; border-radius: 4px; background: var(--bar); }
 .bars .row .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.segtag { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; font: 600 12px var(--f-body); color: var(--ink-2); vertical-align: 1px; }
+.segtag i { width: 9px; height: 9px; border-radius: 2px; }
 .bars .row .v em { font-style: normal; display: block; font-size: 11px; color: var(--ink-3); font-weight: 500; }
 
 /* partner list */
@@ -270,7 +272,7 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 
 /* waiting list */
 .wlist { display: flex; flex-direction: column; overflow: auto; margin: 0 -6px; min-height: 0; }
-.wlist button { display: grid; grid-template-columns: 96px minmax(0, 1fr) 130px 80px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 4px 6px; text-align: left; cursor: pointer; }
+.wlist button { display: grid; grid-template-columns: 96px minmax(0, 1fr) 130px 80px; gap: 14px; align-items: center; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 4px 6px 3px; text-align: left; cursor: pointer; }
 .wlist button:first-child { border-top: 0; }
 .wlist button:hover { background: var(--surface-2); }
 .wlist .who b { display: block; font-weight: 700; font-size: 13px; }
@@ -480,13 +482,12 @@ td.partner { font-weight: 600; }
   .tile.t-trend, .tile.t-wait { min-height: 320px; }
   .tile.t-partners { min-height: 320px; }
 }
+@media (max-width: 1600px) {
+  .dash { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: "k1 k1 k2 k2" "k3 k3 sout sin" "trend trend trend trend" "open open waiting waiting" "partners partners returns returns"; }
+}
 @media (max-width: 1500px) {
-  .dash { grid-template-areas: "k1 k2 k3 speed" "trend trend trend trend" "open waiting waiting waiting" "partners partners returns returns"; }
   .tile.t-partners { min-height: 0; }
   .guide { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 1480px) {
-  .dash { grid-template-areas: "k1 k1 k2 k2" "k3 k3 speed speed" "trend trend trend trend" "open open waiting waiting" "partners partners returns returns"; }
 }
 @media (max-width: 1600px) {
   .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -496,7 +497,7 @@ td.partner { font-weight: 600; }
 }
 @media (max-width: 1180px) {
   .dash { grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "k1 k2" "k3 speed" "trend trend" "open open" "waiting waiting" "partners returns"; }
+    grid-template-areas: "k1 k2" "k3 k3" "sout sin" "trend trend" "open open" "waiting waiting" "partners returns"; }
 }
 @media (max-width: 960px) {
   html, body { height: auto; }
@@ -510,7 +511,7 @@ td.partner { font-weight: 600; }
   .nav .sdot { margin-left: 0; }
   .main { overflow: visible; }
   .page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k1" "k2" "k3" "speed" "trend" "open" "waiting" "partners" "returns"; }
+  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k1" "k2" "k3" "sout" "sin" "trend" "open" "waiting" "partners" "returns"; }
   .wlist button { grid-template-columns: minmax(0, 1fr) 70px; }
   .wlist .st, .wlist .amt { display: none; }
   .filters .q input, .filters select { width: 100%; max-width: 100%; }
@@ -583,7 +584,8 @@ td.partner { font-weight: 600; }
         <article class="tile" style="grid-area:k3" id="t-days"></article>
         <article class="tile" style="grid-area:open" id="t-open"></article>
         <article class="tile t-trend" style="grid-area:trend" id="t-trend"></article>
-        <article class="tile" style="grid-area:speed" id="t-speed"></article>
+        <article class="tile" style="grid-area:sout" id="t-speed-Outbound"></article>
+        <article class="tile" style="grid-area:sin" id="t-speed-Inbound"></article>
         <article class="tile t-partners" style="grid-area:partners" id="t-partners"></article>
         <article class="tile t-wait" style="grid-area:waiting" id="t-waiting"></article>
         <article class="tile" style="grid-area:returns" id="t-returns"></article>
@@ -1022,15 +1024,18 @@ const BUCKETS = [
   { l: "> 365 days", s: "over 12 months", t: d => d > 365 },
 ];
 function tileSpeed(paid) {
-  const rows = BUCKETS.map(b => ({ ...b, n: paid.filter(o => b.t(o.lead)).length }));
-  const max = Math.max(1, ...rows.map(r => r.n));
-  $("t-speed").innerHTML = head("How fast invoices were paid", "Invoices paid in the selected period, grouped by days from submit to paid.", scopeP()) +
-    (paid.length ? `<div class="bars">${rows.map(r => `
-      <div class="row" data-tip="${esc(`<b>${r.l}</b> (${r.s})<br>${r.n} invoices · ${pct(r.n, paid.length)}%`)}">
-        <div class="l"><b>${r.l}</b><span>${r.s}</span></div>
-        <div class="track"><span style="width:${r.n / max * 100}%"></span></div>
-        <div class="v">${r.n}<em>${pct(r.n, paid.length)}%</em></div>
-      </div>`).join("")}</div>` : `<p class="empty-note">No invoices paid in ${periodName()}.</p>`);
+  SEGS.forEach(sg => {
+    const g = paid.filter(o => o.seg === sg.k);
+    const rows = BUCKETS.map(b => ({ ...b, n: g.filter(o => b.t(o.lead)).length }));
+    const max = Math.max(1, ...rows.map(r => r.n));
+    $("t-speed-" + sg.k).innerHTML = head(`How fast paid <span class="segtag"><i style="background:${sg.col}"></i>${sg.label}</span>`, `${sg.label} invoices paid in the selected period, grouped by days from submit to paid.`, scopeP()) +
+      (g.length ? `<div class="bars">${rows.map(r => `
+        <div class="row" data-tip="${esc(`<b>${sg.label} · ${r.l}</b> (${r.s})<br>${plural(r.n, "invoice")} · ${pct(r.n, g.length)}%`)}">
+          <div class="l"><b>${r.l}</b><span>${r.s}</span></div>
+          <div class="track"><span style="width:${r.n / max * 100}%;background:${sg.col}"></span></div>
+          <div class="v">${r.n}<em>${pct(r.n, g.length)}%</em></div>
+        </div>`).join("")}</div>` : `<p class="empty-note">No ${sg.label} invoices paid in ${periodName()}.</p>`);
+  });
 }
 
 function tilePartners(paid) {
