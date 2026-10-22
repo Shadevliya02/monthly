@@ -34,10 +34,12 @@ COLS = {
     "desc": ["Description"],
     "inv": ["Invoice Number"],
     "value": ["BAST Value"],
-    "status": ["Current Status", "Status Payment"],
+    "status": ["Current Status", "Status Payment", "Status"],
     "submit": ["Submit Invoice Date", "Created At"],
     "paid": ["Paid Date"],
 }
+# fields an export may leave out; an update file without them keeps the existing values
+OPTIONAL = {"contract"}
 
 
 def clean(v):
@@ -72,25 +74,29 @@ def read(path):
     for field, names in COLS.items():
         found = [header.index(n) for n in names if n in header]
         if not found:
+            if field in OPTIONAL:
+                continue
             raise KeyError(f"{path.name}: column for {field!r} not found (looked for {names})")
         idx[field] = found[0]
     rows = []
     for r in ws.iter_rows(min_row=2, values_only=True):
         if not any(c is not None for c in r):
             continue
-        rows.append({
+        row = {
             "no": r[idx["no"]],
             "work": clean(r[idx["work"]]),
             "project": clean(r[idx["project"]]),
             "partner": clean(r[idx["partner"]]),
-            "contract": clean(r[idx["contract"]]),
             "desc": clean(r[idx["desc"]]),
             "inv": clean(r[idx["inv"]]),
             "value": float(r[idx["value"]] or 0),
             "status": clean(r[idx["status"]]).lower(),
             "submit": date(r[idx["submit"]]),
             "paid": date(r[idx["paid"]]),
-        })
+        }
+        if "contract" in idx:
+            row["contract"] = clean(r[idx["contract"]])
+        rows.append(row)
     return rows
 
 
@@ -113,6 +119,7 @@ def main():
                     o.update({k: v for k, v in u.items() if k != "no"})
                 updated += 1
             else:
+                u.setdefault("contract", "")
                 u["no"] = next_no
                 next_no += 1
                 orders.append(u)
