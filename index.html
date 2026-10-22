@@ -1029,7 +1029,6 @@ function tileOpen() {
   t.classList.toggle("alert", ret.length > 0);
   const oldest = open.length ? open.reduce((a, b) => (b.waiting > a.waiting ? b : a), open[0]) : null;
   const kv = oldest ? `<div class="kv">
-        <div data-tip="Average days since submit for these ${plural(open.length, "invoice")}, counted to today"><span>Average waiting</span><b>${Math.round(avg(open, o => o.waiting))}<small>days</small></b></div>
         <button data-id="${oldest.no}" data-tip="${esc(`<b>${oldest.partner}</b><br>${oldest.desc}<br>Submitted ${fmtD(oldest.submit)} · ${rp(oldest.value)}<br><i>Click to see its timeline</i>`)}"><span>Longest waiting</span><b class="bad">${oldest.waiting}<small>days</small></b></button>
         <div data-tip="${esc(`Total value of the ${plural(ret.length, "returned invoice")}: sent back to the partner to fix and resubmit`)}"><span>Value returned</span><b>${rpS(sum(ret, o => o.value))}</b></div>
       </div>` : "";
