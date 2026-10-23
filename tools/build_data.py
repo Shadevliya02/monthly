@@ -35,12 +35,18 @@ EXCLUDE_INVOICES = {
     "JNV/26-08-1022/AJR": None,   # typo duplicate of INV/26-08-1022/AJR (submitted 2026-09-11), which stays
     "259VMP-INVFAVIII2026": None,  # typo duplicate of 259/VMP-INV/FA/VIII/2026 (paid 2026-10-13)
     "INV/26-09-1102/AR": None,     # typo duplicate of INV/26-09-1102/AJR (paid 2026-10-12)
-    "INV-250901": None,            # ICG Singapore, value 10,000 in the export (USD?): held back until confirmed
 }
 # invoices whose value in a later export is not taken over (kept as is until confirmed)
 KEEP_VALUE = {
-    "INV-250908", "INV-250902", "INV-250904",   # ICG Singapore: new export shows 122,500 / 33,000 / 90,000 (USD?)
+    "INV-250908", "INV-250902", "INV-250904",   # ICG Singapore: the recap shows USD; the Rupiah values already converted stay
 }
+# partners that invoice in USD: a value below 10 million in an export is taken as USD and converted at this rate
+USD_PARTNERS = {
+    "Internal Consulting Group (ICG) Singapore Pte Ltd": 16871,
+}
+# update files whose name contains this are the complete, official list of inbound invoices:
+# inbound invoices missing from the newest such file are left out
+INBOUND_MASTER = "REKAP_MONOLOG_INBOUND"
 # partners for which only the listed invoice numbers are shown (all their other invoices are left out for now)
 KEEP_ONLY = {
     "CV Divpa Solusindo": {"003/DIVPA/V/2026"},
@@ -141,10 +147,8 @@ def read(path):
             row["cycles"] = [[d, subs[i] if i < len(subs) else None] for i, d in enumerate(rets)]
             if "reason" in idx and clean(r[idx["reason"]]):
                 row["reason"] = clean(r[idx["reason"]])
-        if row["status"] == "open":
-            # "open" = not paid yet: returned if the last step is a return with no resubmit after it, else in review
-            cyc = row.get("cycles") or []
-            row["status"] = "returned" if cyc and not cyc[-1][1] else "review"
+        if row["status"] in ("open", "pending payment"):
+            row["status"] = "review"   # both mean: submitted, waiting to be paid
         rows.append(row)
     return rows
 
@@ -158,11 +162,15 @@ def main():
 
     sources = [BASE.name]
     stats = []
+    master = None
     for path in sorted((DATA / "updates").glob("*.xlsx")):
         updated = added = 0
         seen = set()
         for u in read(path):
             u["status"] = u["status"] or "paid"
+            rate = USD_PARTNERS.get(u["partner"])
+            if rate and u["value"] < 10_000_000:
+                u["value"] = round(u["value"] * rate)
             if key(u["inv"]) in KEEP_VALUE:
                 u.pop("value")
             matches = by_key.get(key(u["inv"]))
@@ -186,6 +194,14 @@ def main():
                 added += 1
         sources.append(path.name)
         stats.append(f"{path.name}: {updated} updated, {added} added")
+        if INBOUND_MASTER in path.name:
+            master = {key(r["inv"]) for r in read(path)}
+
+    if master is not None:
+        gone = [o for o in orders if o["work"] in ("Inbound", "Project Delta") and key(o["inv"]) not in master]
+        orders = [o for o in orders if o not in gone]
+        if gone:
+            stats.append(f"left out {len(gone)} inbound invoices not in the latest inbound recap: {', '.join(o['inv'] for o in gone)}")
 
     names = {clean(a).lower(): b for a, b in PARTNER_NAMES.items()}
     for o in orders:
