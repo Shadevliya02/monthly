@@ -308,6 +308,11 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
 .bars .row .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .segtag { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; font: 600 12px var(--f-body); color: var(--ink-2); vertical-align: 1px; }
 .segtag i { width: 9px; height: 9px; border-radius: 2px; }
+.bars.ag .row { grid-template-columns: 80px minmax(0, 1fr) auto; cursor: pointer; border-radius: 6px; }
+.bars.ag .row:hover { background: var(--surface-2); }
+.bars.ag .row .v { min-width: 62px; }
+.bars.ag .row .v small { font-size: 10.5px; font-weight: 500; color: var(--ink-3); }
+.hint b { color: var(--ink-2); font-weight: 700; }
 .bars .row .v em { font-style: normal; display: block; font-size: 11px; color: var(--ink-3); font-weight: 500; }
 
 /* partner list */
@@ -1129,18 +1134,29 @@ const BUCKETS = [
   { l: "181–365 days", s: "7–12 months", t: d => d > 180 && d <= 365 },
   { l: "> 365 days", s: "over 12 months", t: d => d > 365 },
 ];
-function tileSpeed(paid) {
+/* aging (as in an aging report): invoices not paid yet, grouped by days since submit (counted to today) */
+const AGING = [
+  { k: "a0-30", l: "0–30 days", s: "under 1 month", t: d => d <= 30, c: "var(--age-1)" },
+  { k: "a31-60", l: "31–60 days", s: "1–2 months", t: d => d > 30 && d <= 60, c: "var(--age-2)" },
+  { k: "a61-90", l: "61–90 days", s: "2–3 months", t: d => d > 60 && d <= 90, c: "var(--age-3)" },
+  { k: "a91", l: "> 90 days", s: "over 3 months", t: d => d > 90, c: "var(--age-4)" },
+];
+const ageMatch = (o, v) => !o.paid && (v === "over30" ? o.waiting > 30 : AGING.find(a => a.k === v).t(o.waiting));
+const ageLabel = v => v === "over30" ? "over 1 month" : AGING.find(a => a.k === v).l;
+function tileSpeed() {
+  const open = openInPeriod();
   SEGS.forEach(sg => {
-    const g = paid.filter(o => o.seg === sg.k);
-    const rows = BUCKETS.map(b => ({ ...b, n: g.filter(o => b.t(o.lead)).length }));
+    const g = open.filter(o => o.seg === sg.k);
+    const rows = AGING.map(b => { const x = g.filter(o => b.t(o.waiting)); return { ...b, n: x.length, v: sum(x, o => o.value) }; });
     const max = Math.max(1, ...rows.map(r => r.n));
-    $("t-speed-" + sg.k).innerHTML = head(`Aging <span class="segtag"><i style="background:${sg.col}"></i>${sg.label}</span>`, `Aging of ${sg.label} invoices paid in the selected period, grouped by days from submit to paid.`, scopeP()) +
-      (g.length ? `<div class="bars">${rows.map(r => `
-        <div class="row" data-tip="${esc(`<b>${sg.label} · ${r.l}</b> (${r.s})<br>${plural(r.n, "invoice")} · ${pct(r.n, g.length)}%`)}">
+    $("t-speed-" + sg.k).innerHTML = head(`Aging <span class="segtag"><i style="background:${sg.col}"></i>${sg.label}</span>`, `${sg.label} invoices not paid yet (submitted ${cumName()}), grouped by how many days they have been waiting since submit, counted to today.`, scopeC()) +
+      (g.length ? `<div class="bars ag">${rows.map(r => `
+        <div class="row" ${r.n ? `data-aging="${sg.k}|${r.k}"` : ""} data-tip="${esc(`<b>${sg.label} · ${r.l}</b> (${r.s})<br>${plural(r.n, "invoice")} not paid yet · ${rp(r.v)}${r.n ? "<br><i>Click to see them</i>" : ""}`)}">
           <div class="l"><b>${r.l}</b><span>${r.s}</span></div>
-          <div class="track"><span style="width:${r.n / max * 100}%;background:${sg.col}"></span></div>
-          <div class="v">${r.n}<em>${pct(r.n, g.length)}%</em></div>
-        </div>`).join("")}</div>` : `<p class="empty-note">No ${sg.label} invoices paid in ${periodName()}.</p>`);
+          <div class="track"><span style="width:${r.n / max * 100}%;background:${r.c}"></span></div>
+          <div class="v">${r.n}<small> inv.</small><em>${r.n ? rpS(r.v) : "–"}</em></div>
+        </div>`).join("")}</div>
+      <div class="tile-foot"><span class="hint">Not paid yet: <b>${plural(g.length, "invoice")}</b> · <b>${rpS(sum(g, o => o.value))}</b></span></div>` : `<p class="empty-note">No ${sg.label} invoices waiting from ${cumName()}.</p>`);
   });
 }
 
@@ -1271,7 +1287,7 @@ function tableRows() {
     (f.partner === "all" || o.partner === f.partner) &&
     (f.status === "all" || (f.status === "unpaid" ? o.status !== "paid" : o.status === f.status)) &&
     (f.smonth === "all" || inSub(o.submit, String(f.smonth))) &&
-    (f.age === "all" || (!o.paid && o.waiting > 30)) &&
+    (f.age === "all" || ageMatch(o, f.age)) &&
     (f.month === "all" || inYM(o.paid, f.month)) &&
     (!f.hist || o.cycles.length) &&
     (!q || (o.partner + " " + o.desc + " " + o.inv + " " + o.contract).toLowerCase().includes(q)));
@@ -1328,7 +1344,7 @@ function activeChips() {
   if (f.smonth !== "all") c.push(["smonth", "Submitted", monthL(f.smonth)]);
   if (f.month !== "all") c.push(["month", "Paid", monthL(f.month)]);
   if (f.hist) c.push(["hist", "Only", "with return dates"]);
-  if (f.age !== "all") c.push(["age", "Waiting", "over 1 month"]);
+  if (f.age !== "all") c.push(["age", "Waiting", ageLabel(f.age)]);
   return c.map(([k, l, v]) => `<button class="fchip" data-clear="${k}" aria-label="Remove filter ${esc(l)}"><span>${esc(l)}:</span><b>${esc(v)}</b><i>✕</i></button>`).join("");
 }
 function renderTable() {
@@ -1521,6 +1537,8 @@ document.addEventListener("click", e => {
   }
   const av = t.closest("[data-avg]");
   if (av) { go("paid", { kind: av.dataset.avg === "Inbound" ? "inbound" : "outbound", month: periodSel() }); state.sort = { key: "days", dir: av.dataset.dir === "asc" ? 1 : -1 }; renderTable(); return; }
+  const ag = t.closest("[data-aging]");
+  if (ag) { const [seg, k] = ag.dataset.aging.split("|"); go("unpaid", { kind: seg === "Inbound" ? "inbound" : "outbound", smonth: cumSel(), age: k }); return; }
   const ubm = t.closest("[data-ubm]");
   if (ubm) { go("unpaid", { smonth: ubm.dataset.ubm }); return; }
   const ov = t.closest("[data-over]");
