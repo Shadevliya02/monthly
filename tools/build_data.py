@@ -35,6 +35,11 @@ EXCLUDE_INVOICES = {
     "JNV/26-08-1022/AJR": None,   # typo duplicate of INV/26-08-1022/AJR (submitted 2026-09-11), which stays
     "259VMP-INVFAVIII2026": None,  # typo duplicate of 259/VMP-INV/FA/VIII/2026 (paid 2026-10-13)
     "INV/26-09-1102/AR": None,     # typo duplicate of INV/26-09-1102/AJR (paid 2026-10-12)
+    "INV-250901": None,            # ICG Singapore, value 10,000 in the export (USD?): held back until confirmed
+}
+# invoices whose value in a later export is not taken over (kept as is until confirmed)
+KEEP_VALUE = {
+    "INV-250908", "INV-250902", "INV-250904",   # ICG Singapore: new export shows 122,500 / 33,000 / 90,000 (USD?)
 }
 # partners for which only the listed invoice numbers are shown (all their other invoices are left out for now)
 KEEP_ONLY = {
@@ -56,11 +61,17 @@ COLS = {
     "inv": ["Invoice Number"],
     "value": ["BAST Value"],
     "status": ["Current Status", "Status Payment", "Status"],
-    "submit": ["Submit Invoice Date", "Created At"],
+    "submit": ["Submit Invoice Date", "Created At", "Submit Date"],
     "paid": ["Paid Date"],
+    "ret": ["Return Date"],          # e.g. "Return 1 : 14 September 2026 Return 2 : 18 September 2026"
+    "resub": ["Resubmit Date"],      # e.g. "Resubmit 1 : 15 September 2026 Resubmit 2 : 15 Oktober 2026"
+    "reason": ["Reason"],
 }
 # fields an export may leave out; an update file without them keeps the existing values
-OPTIONAL = {"contract"}
+OPTIONAL = {"no", "contract", "ret", "resub", "reason"}
+# Indonesian month names in the inbound exports
+MONTHS_ID = {"januari": "January", "februari": "February", "maret": "March", "mei": "May", "juni": "June",
+             "juli": "July", "agustus": "August", "oktober": "October", "desember": "December"}
 
 
 def clean(v):
@@ -80,12 +91,18 @@ def date(v):
     if isinstance(v, datetime.datetime):
         return v.date().isoformat()
     s = clean(v)
+    s = re.sub(r"[A-Za-z]+", lambda m: MONTHS_ID.get(m.group(0).lower(), m.group(0)), s)
     for fmt in ("%d %B %Y", "%d %b %Y", "%Y-%m-%d", "%d/%m/%Y"):
         try:
             return datetime.datetime.strptime(s, fmt).date().isoformat()
         except ValueError:
             pass
     raise ValueError(f"Unrecognised date: {v!r}")
+
+
+def dates_in(text):
+    """All dates written like '14 September 2026' / '08 Oktober 2026' inside a free-text cell, in order."""
+    return [date(m) for m in re.findall(r"\d{1,2} [A-Za-z]+ \d{4}", clean(text))]
 
 
 def read(path):
@@ -104,7 +121,7 @@ def read(path):
         if not any(c is not None for c in r):
             continue
         row = {
-            "no": r[idx["no"]],
+            "no": r[idx["no"]] if "no" in idx else None,
             "work": clean(r[idx["work"]]),
             "project": clean(r[idx["project"]]),
             "partner": clean(r[idx["partner"]]),
@@ -117,6 +134,17 @@ def read(path):
         }
         if "contract" in idx:
             row["contract"] = clean(r[idx["contract"]])
+        if "ret" in idx:
+            # return / resubmit cycles from the free-text columns, paired in order
+            rets = dates_in(r[idx["ret"]])
+            subs = dates_in(r[idx["resub"]]) if "resub" in idx else []
+            row["cycles"] = [[d, subs[i] if i < len(subs) else None] for i, d in enumerate(rets)]
+            if "reason" in idx and clean(r[idx["reason"]]):
+                row["reason"] = clean(r[idx["reason"]])
+        if row["status"] == "open":
+            # "open" = not paid yet: returned if the last step is a return with no resubmit after it, else in review
+            cyc = row.get("cycles") or []
+            row["status"] = "returned" if cyc and not cyc[-1][1] else "review"
         rows.append(row)
     return rows
 
@@ -132,9 +160,19 @@ def main():
     stats = []
     for path in sorted((DATA / "updates").glob("*.xlsx")):
         updated = added = 0
+        seen = set()
         for u in read(path):
             u["status"] = u["status"] or "paid"
+            if key(u["inv"]) in KEEP_VALUE:
+                u.pop("value")
             matches = by_key.get(key(u["inv"]))
+            if matches and len(matches) > 1:
+                # several records share this number: match on the description
+                same = [o for o in matches if o["desc"].lower() == u["desc"].lower()]
+                matches = same or matches
+            if matches and key(u["inv"]) in seen and not any(o["desc"].lower() == u["desc"].lower() for o in matches):
+                matches = None   # the same number twice in one file with different descriptions: a separate invoice
+            seen.add(key(u["inv"]))
             if matches:
                 for o in matches:
                     o.update({k: v for k, v in u.items() if k != "no"})
@@ -144,7 +182,7 @@ def main():
                 u["no"] = next_no
                 next_no += 1
                 orders.append(u)
-                by_key[key(u["inv"])] = [u]
+                by_key.setdefault(key(u["inv"]), []).append(u)
                 added += 1
         sources.append(path.name)
         stats.append(f"{path.name}: {updated} updated, {added} added")
@@ -152,6 +190,9 @@ def main():
     names = {clean(a).lower(): b for a, b in PARTNER_NAMES.items()}
     for o in orders:
         o["partner"] = names.get(o["partner"].lower(), o["partner"])
+        # older exports put inbound as Type of Work "Project Delta" (Type Project "-"); newer ones as "Inbound" / "Project Delta"
+        if o["work"] == "Project Delta":
+            o["work"], o["project"] = "Inbound", "Project Delta"
 
     excluded = {clean(p).lower() for p in EXCLUDE_PARTNERS}
     dropped = [o for o in orders if o["partner"].lower() in excluded]
@@ -179,7 +220,8 @@ def main():
 
     returns = {key(k): v for k, v in json.loads((DATA / "return_dates.json").read_text()).items() if not k.startswith("_")}
     for o in orders:
-        o["cycles"] = returns.get(key(o["inv"]), [])
+        # return_dates.json (recorded by hand) wins; otherwise the cycles from the latest export that has them
+        o["cycles"] = returns.get(key(o["inv"]), o.get("cycles") or [])
 
     payload = {"source": " + ".join(sources), "built": datetime.datetime.now(ZoneInfo("Asia/Jakarta")).isoformat(timespec="minutes"), "orders": orders}
     OUT.write_text("window.PAYMENT_DATA = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n")
