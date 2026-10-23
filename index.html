@@ -143,7 +143,7 @@ svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-widt
   flex: 1; min-height: 0; display: grid; gap: 12px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "k1 k2 k3 sout sin" "trend trend partners returns returns" "open open waiting waiting waiting";
+  grid-template-areas: "k1 k2 k3 sout sin" "open open waiting waiting waiting" "trend trend partners returns returns";
 }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; }
 .tile-h { display: flex; align-items: center; gap: 6px; min-height: 22px; }
@@ -552,7 +552,7 @@ td.partner { font-weight: 600; }
   .tile.t-partners { min-height: 320px; }
 }
 @media (max-width: 1600px) {
-  .dash { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: "k1 k1 k2 k2" "k3 k3 sout sin" "trend trend trend trend" "partners partners returns returns" "open open waiting waiting"; }
+  .dash { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: "k1 k1 k2 k2" "open open waiting waiting" "k3 k3 sout sin" "trend trend trend trend" "partners partners returns returns"; }
 }
 @media (max-width: 1500px) {
   .tile.t-partners { min-height: 0; }
@@ -566,7 +566,7 @@ td.partner { font-weight: 600; }
 }
 @media (max-width: 1180px) {
   .dash { grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "k1 k2" "k3 k3" "sout sin" "trend trend" "partners returns" "open open" "waiting waiting"; }
+    grid-template-areas: "k1 k2" "open open" "waiting waiting" "k3 k3" "sout sin" "trend trend" "partners returns"; }
 }
 @media (max-width: 960px) {
   html, body { height: auto; }
@@ -580,7 +580,7 @@ td.partner { font-weight: 600; }
   .nav .sdot { margin-left: 0; }
   .main { overflow: visible; }
   .page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k1" "k2" "k3" "sout" "sin" "trend" "partners" "returns" "open" "waiting"; }
+  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k1" "k2" "open" "waiting" "k3" "sout" "sin" "trend" "partners" "returns"; }
   .wlist button { grid-template-columns: minmax(0, 1fr) 70px; }
   .wlist .st, .wlist .amt { display: none; }
   .filters .q input, .filters select { width: 100%; max-width: 100%; }
@@ -730,7 +730,7 @@ td.partner { font-weight: 600; }
         <article class="card fcard">
           <h2>Where this website fits</h2>
           <div class="map">
-            <div><b>Step 14</b><span>Mitra sends the invoice to TDE → recorded as the <em>Submit date</em> (Invoices received).</span></div>
+            <div><b>Step 14</b><span>Mitra sends the invoice to TDE → recorded as the <em>Submit date</em> (Invoices submitted to Finance).</span></div>
             <div><b>Returns</b><span>Invoice sent back to Mitra and sent again → <em>Return date</em> and <em>Resubmit date</em> (Return history).</span></div>
             <div><b>Step 19</b><span>Finance pays → recorded as the <em>Paid date</em> (Total paid).</span></div>
           </div>
@@ -785,7 +785,7 @@ td.partner { font-weight: 600; }
             <dt>Colocation</dt><dd>Space in the data center rented for a customer’s equipment: a shared rack, a dedicated cage, or a whole private room.</dd>
             <dt>Working Room</dt><dd>An office room inside the data center that a customer can use, dedicated or shared. Often appears in invoice descriptions.</dd>
             <dt>BAST value</dt><dd>The invoice amount, taken from the BAST.</dd>
-            <dt>Submit date</dt><dd>The day the invoice was submitted to TDE. “Invoices received” counts by this date.</dd>
+            <dt>Submit date</dt><dd>The day the invoice was submitted to TDE. “Invoices submitted to Finance” counts by this date.</dd>
             <dt>Paid date</dt><dd>The day the invoice was paid. “Total paid” counts by this date.</dd>
             <dt>Days to get paid</dt><dd>Paid date minus submit date, in calendar days.</dd>
             <dt>Paid</dt><dd>Payment is done.</dd>
@@ -983,7 +983,7 @@ function tileReceived() {
   const rec = ORDERS.filter(o => inYM(o.submit, periodSel()));
   const rows = SEGS.map(s => { const g = rec.filter(o => o.seg === s.k); return { ...s, n: g.length, v: sum(g, o => o.value) }; });
   const pm = prevMonth();
-  $("t-received").innerHTML = head("Invoices received", "Invoices whose submit date falls in the selected period, whatever their status is now.", scopeP()) + `
+  $("t-received").innerHTML = head("Invoices submitted to Finance", "Invoices whose submit date (submitted to Finance) falls in the selected period, whatever their status is now.", scopeP()) + `
     <div><div class="big">${rec.length}<small>${rec.length === 1 ? "invoice" : "invoices"}</small></div>
       <div class="line"><span><b>${rpS(sum(rec, o => o.value))}</b> total value</span>${pm === null ? "" : delta(rec.length, receivedIn(pm).length, "up")}</div></div>
     <div style="display:flex;flex-direction:column;gap:9px">
@@ -1076,12 +1076,12 @@ function tileTrend() {
   const val = (d, i) => mode === "value" ? d.by[i].v : d.by[i].n;
   const tot = d => mode === "value" ? d.v : d.n;
   const max = niceMax(Math.max(...data.map(tot)));
-  const title = rec ? "Invoices received per month" : mode === "count" ? "Invoices paid per month" : "Paid per month";
+  const title = rec ? "Invoices submitted per month" : mode === "count" ? "Invoices paid per month" : "Paid per month";
   const tipTxt = rec ? "Number of invoices by submit month." : mode === "count" ? "Number of invoices by paid month." : "Total BAST value by paid month.";
   $("t-trend").innerHTML = head(title, tipTxt + " Click a bar to show that month on the whole dashboard.", scopeTxt(`${ICON.cal}Jan–Dec ${YEAR}`, "Always shows the whole year")) + `
     <div class="trend-ctl">
       <div class="lg">${SEGS.map(sg => `<span><i style="background:${sg.col}"></i>${sg.label}</span>`).join("")}</div>
-      <span class="seg" role="tablist" aria-label="Chart shows"><button class="${mode === "value" ? "on" : ""}" data-trend="value">Paid value</button><button class="${mode === "count" ? "on" : ""}" data-trend="count">Paid count</button><button class="${rec ? "on" : ""}" data-trend="received">Received</button></span>
+      <span class="seg" role="tablist" aria-label="Chart shows"><button class="${mode === "value" ? "on" : ""}" data-trend="value">Paid value</button><button class="${mode === "count" ? "on" : ""}" data-trend="count">Paid count</button><button class="${rec ? "on" : ""}" data-trend="received">Submitted</button></span>
     </div>
     <div class="chart"></div>`;
   /* draw at the box's real size so the chart uses the whole width of the tile */
@@ -1091,7 +1091,7 @@ function tileTrend() {
   const L = 52, R = 8, T = 22, B = 26;
   const bw = (W - L - R) / 12, x = m => L + m * bw, y = v => T + (1 - v / max) * (H - T - B);
   const fmt = v => mode === "value" ? rpS(v).replace("Rp ", "") : String(v);
-  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${rec ? "Invoices received per month" : "Paid per month"}">`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${rec ? "Invoices submitted per month" : "Paid per month"}">`;
   for (let i = 0; i <= 4; i++) {
     const v = max * i / 4;
     s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/>`;
@@ -1113,7 +1113,7 @@ function tileTrend() {
     });
     if (tot(d)) s += `<text x="${cx + w / 2}" y="${y(tot(d)) - 6}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)" opacity="${dim ? .4 : 1}">${fmt(tot(d))}</text>`;
     s += `<text x="${cx + w / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" font-weight="${state.period === d.m ? 800 : 500}" fill="${state.period === d.m ? "var(--ink)" : "var(--ink-2)"}">${MS[d.m]}</text>`;
-    const tip = `<b>${MONTHS[d.m]} ${YEAR}</b> · ${rec ? "received" : "paid"}<br>` + (d.n ? SEGS.map((sg, i) => `${sg.label}: ${d.by[i].n} inv. · ${rpS(d.by[i].v)}`).join("<br>") + `<br>Total: ${d.n} inv. · ${rp(d.v)}` : rec ? "No invoices received" : "No invoices paid") + `<br><i>Click to show this month</i>`;
+    const tip = `<b>${MONTHS[d.m]} ${YEAR}</b> · ${rec ? "submitted to Finance" : "paid"}<br>` + (d.n ? SEGS.map((sg, i) => `${sg.label}: ${d.by[i].n} inv. · ${rpS(d.by[i].v)}`).join("<br>") + `<br>Total: ${d.n} inv. · ${rp(d.v)}` : rec ? "No invoices submitted" : "No invoices paid") + `<br><i>Click to show this month</i>`;
     s += `<rect x="${x(d.m)}" y="${T}" width="${bw}" height="${H - T}" fill="transparent" data-period="${d.m}" data-tip="${esc(tip)}" style="cursor:pointer"/>`;
   });
   s += "</svg>";
@@ -1134,7 +1134,7 @@ function tileSpeed(paid) {
     const g = paid.filter(o => o.seg === sg.k);
     const rows = BUCKETS.map(b => ({ ...b, n: g.filter(o => b.t(o.lead)).length }));
     const max = Math.max(1, ...rows.map(r => r.n));
-    $("t-speed-" + sg.k).innerHTML = head(`How fast paid <span class="segtag"><i style="background:${sg.col}"></i>${sg.label}</span>`, `${sg.label} invoices paid in the selected period, grouped by days from submit to paid.`, scopeP()) +
+    $("t-speed-" + sg.k).innerHTML = head(`Aging <span class="segtag"><i style="background:${sg.col}"></i>${sg.label}</span>`, `Aging of ${sg.label} invoices paid in the selected period, grouped by days from submit to paid.`, scopeP()) +
       (g.length ? `<div class="bars">${rows.map(r => `
         <div class="row" data-tip="${esc(`<b>${sg.label} · ${r.l}</b> (${r.s})<br>${plural(r.n, "invoice")} · ${pct(r.n, g.length)}%`)}">
           <div class="l"><b>${r.l}</b><span>${r.s}</span></div>
@@ -1249,7 +1249,7 @@ const PRESETS = {
   review: { title: "In review", crumb: "Invoices · By status", desc: "Submitted and not paid yet. Documents are being checked or processed.", f: { status: "review" } },
   returned: { title: "Returned", crumb: "Invoices · By status", desc: "Sent back to the partner to fix. These need follow-up.", f: { status: "returned" } },
   unpaid: { title: "Not paid yet", crumb: "Invoices · By status", desc: "Everything in review or returned, oldest first.", f: { status: "unpaid" }, sort: { key: "days", dir: -1 } },
-  received: { title: "Invoices received", crumb: "Invoices", desc: "Invoices by the month they were submitted." },
+  received: { title: "Invoices submitted to Finance", crumb: "Invoices", desc: "Invoices by the month they were submitted to Finance." },
   history: { title: "Return history", crumb: "Invoices", desc: "Paid invoices that were returned and resubmitted before payment, with their return and resubmit dates and return aging.", f: { hist: true } },
 };
 const KIND_L = { outbound: "Outbound (all)", "out-xc": "Outbound · Cross Connect", "out-colo": "Outbound · Colocation", inbound: "Inbound" };
