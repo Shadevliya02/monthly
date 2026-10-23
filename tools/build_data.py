@@ -32,6 +32,7 @@ EXCLUDE_INVOICES = {
     "269/VMP-INV/FA/VI/2025": "2026-02-12",   # the returned record; the paid one (submitted 2025-11-06) stays
     "005/INV-GMT/II/2026": None,
     "031/INV-GMT/IX/2026": None,
+    "JNV/26-08-1022/AJR": None,   # typo duplicate of INV/26-08-1022/AJR (submitted 2026-09-11), which stays
 }
 
 # accepted header names per field (exports are not always consistent)
