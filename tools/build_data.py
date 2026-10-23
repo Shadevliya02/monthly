@@ -26,6 +26,13 @@ OUT = ROOT / "data.js"
 
 # partners left out of the dashboard entirely (all their invoices are dropped)
 EXCLUDE_PARTNERS = {"PT Sarana Komunikasi Data"}
+# single invoices left out of the dashboard: invoice number -> submit date (YYYY-MM-DD) of the record
+# to drop, or None to drop every record with that number
+EXCLUDE_INVOICES = {
+    "269/VMP-INV/FA/VI/2025": "2026-02-12",   # the returned record; the paid one (submitted 2025-11-06) stays
+    "005/INV-GMT/II/2026": None,
+    "031/INV-GMT/IX/2026": None,
+}
 
 # accepted header names per field (exports are not always consistent)
 COLS = {
@@ -136,6 +143,15 @@ def main():
     orders = [o for o in orders if o["partner"].lower() not in excluded]
     if dropped:
         stats.append(f"left out {len(dropped)} invoices from: {', '.join(sorted(EXCLUDE_PARTNERS))}")
+
+    skip = {key(k): v for k, v in EXCLUDE_INVOICES.items()}
+    def skipped(o):
+        k = key(o["inv"])
+        return k in skip and (skip[k] is None or skip[k] == o["submit"])
+    dropped = [o for o in orders if skipped(o)]
+    orders = [o for o in orders if not skipped(o)]
+    if dropped:
+        stats.append(f"left out {len(dropped)} single invoices: {', '.join(o['inv'] for o in dropped)}")
 
     returns = {key(k): v for k, v in json.loads((DATA / "return_dates.json").read_text()).items() if not k.startswith("_")}
     for o in orders:
