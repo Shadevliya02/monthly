@@ -33,6 +33,16 @@ EXCLUDE_INVOICES = {
     "005/INV-GMT/II/2026": None,
     "031/INV-GMT/IX/2026": None,
     "JNV/26-08-1022/AJR": None,   # typo duplicate of INV/26-08-1022/AJR (submitted 2026-09-11), which stays
+    "259VMP-INVFAVIII2026": None,  # typo duplicate of 259/VMP-INV/FA/VIII/2026 (paid 2026-10-13)
+    "INV/26-09-1102/AR": None,     # typo duplicate of INV/26-09-1102/AJR (paid 2026-10-12)
+}
+# partners for which only the listed invoice numbers are shown (all their other invoices are left out for now)
+KEEP_ONLY = {
+    "CV Divpa Solusindo": {"003/DIVPA/V/2026"},
+}
+# partner names to correct (name in an export -> name shown)
+PARTNER_NAMES = {
+    "PT Divpa Solusindo": "CV Divpa Solusindo",
 }
 
 # accepted header names per field (exports are not always consistent)
@@ -139,6 +149,10 @@ def main():
         sources.append(path.name)
         stats.append(f"{path.name}: {updated} updated, {added} added")
 
+    names = {clean(a).lower(): b for a, b in PARTNER_NAMES.items()}
+    for o in orders:
+        o["partner"] = names.get(o["partner"].lower(), o["partner"])
+
     excluded = {clean(p).lower() for p in EXCLUDE_PARTNERS}
     dropped = [o for o in orders if o["partner"].lower() in excluded]
     orders = [o for o in orders if o["partner"].lower() not in excluded]
@@ -153,6 +167,15 @@ def main():
     orders = [o for o in orders if not skipped(o)]
     if dropped:
         stats.append(f"left out {len(dropped)} single invoices: {', '.join(o['inv'] for o in dropped)}")
+
+    keep = {clean(p).lower(): {key(i) for i in invs} for p, invs in KEEP_ONLY.items()}
+    def kept(o):
+        allowed = keep.get(o["partner"].lower())
+        return allowed is None or key(o["inv"]) in allowed
+    dropped = [o for o in orders if not kept(o)]
+    orders = [o for o in orders if kept(o)]
+    if dropped:
+        stats.append(f"left out {len(dropped)} other invoices from: {', '.join(sorted(KEEP_ONLY))}")
 
     returns = {key(k): v for k, v in json.loads((DATA / "return_dates.json").read_text()).items() if not k.startswith("_")}
     for o in orders:
